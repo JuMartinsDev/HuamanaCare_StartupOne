@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../../../theme/app_theme.dart';
 import '../../../models/app_state.dart';
 import '../../../models/models.dart';
 import '../paciente_home.dart';
 import '../alertas_screen.dart';
+import '../criar_compromisso_screen.dart';
 
 class InicioTab extends StatelessWidget {
   const InicioTab({super.key});
@@ -29,14 +31,19 @@ class InicioTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final p = state.paciente;
-
     final agora = DateTime.now();
 
     final pendentes =
         state.remedios.where((r) => !r.tomado).length;
 
-    final totalAlertas =
-        pendentes + state.compromissos.length;
+    final compromissosFuturos =
+        state.compromissos.where((compromisso) {
+      final data = compromisso.data;
+
+      return data != null && !data.isBefore(agora);
+    }).length;
+
+    final totalAlertas = pendentes + compromissosFuturos;
 
     final proximoCompromisso =
         _encontrarProximoCompromisso(
@@ -59,6 +66,9 @@ class InicioTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // =========================
+            // CABEÇALHO
+            // =========================
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -111,6 +121,10 @@ class InicioTab extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                // =========================
+                // CARD DO PACIENTE
+                // =========================
                 Positioned(
                   left: 20,
                   right: 20,
@@ -161,8 +175,9 @@ class InicioTab extends StatelessWidget {
                                     fontSize: 16,
                                     fontWeight:
                                         FontWeight.w700,
-                                    color: AppTheme
-                                        .textPrimary,
+                                    color:
+                                        AppTheme
+                                            .textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -171,8 +186,9 @@ class InicioTab extends StatelessWidget {
                                   style:
                                       GoogleFonts.poppins(
                                     fontSize: 12,
-                                    color: AppTheme
-                                        .textSecondary,
+                                    color:
+                                        AppTheme
+                                            .textSecondary,
                                   ),
                                 ),
                               ],
@@ -191,7 +207,9 @@ class InicioTab extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 50),
+
             Padding(
               padding:
                   const EdgeInsets.symmetric(
@@ -201,6 +219,9 @@ class InicioTab extends StatelessWidget {
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
                 children: [
+                  // =========================
+                  // RESUMO DO DIA
+                  // =========================
                   Row(
                     mainAxisAlignment:
                         MainAxisAlignment.spaceBetween,
@@ -223,12 +244,18 @@ class InicioTab extends StatelessWidget {
                           fontSize: 12,
                           fontWeight:
                               FontWeight.w600,
-                          color: AppTheme.accent,
+                          color:
+                              AppTheme.accent,
                         ),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
+
+                  // =========================
+                  // MEDICAMENTOS
+                  // =========================
                   _ResumoRow(
                     icone:
                         Icons.medication_outlined,
@@ -245,7 +272,12 @@ class InicioTab extends StatelessWidget {
                       );
                     },
                   ),
+
                   const SizedBox(height: 10),
+
+                  // =========================
+                  // ALERTAS
+                  // =========================
                   _ResumoRow(
                     icone:
                         Icons.notifications_none_rounded,
@@ -263,7 +295,12 @@ class InicioTab extends StatelessWidget {
                       );
                     },
                   ),
+
                   const SizedBox(height: 22),
+
+                  // =========================
+                  // PRÓXIMO COMPROMISSO
+                  // =========================
                   Text(
                     'Próximo compromisso',
                     style:
@@ -275,7 +312,12 @@ class InicioTab extends StatelessWidget {
                           AppTheme.textPrimary,
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
+                  // =========================
+                  // CALENDÁRIO
+                  // =========================
                   _MiniCalendar(
                     mes: agora.month,
                     ano: agora.year,
@@ -283,13 +325,117 @@ class InicioTab extends StatelessWidget {
                     diasComCompromisso:
                         diasComCompromisso,
                   ),
+
                   const SizedBox(height: 12),
+
+                  // =========================
+                  // PRÓXIMO COMPROMISSO
+                  // =========================
                   if (proximoCompromisso != null)
                     _CompromissoCard(
                       c: proximoCompromisso,
                     )
                   else
-                    const SizedBox.shrink(),
+                    Container(
+                      width: double.infinity,
+                      padding:
+                          const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius:
+                            BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.divider,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons
+                                .event_available_outlined,
+                            size: 32,
+                            color:
+                                AppTheme.primary,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Nenhum compromisso agendado',
+                            style:
+                                GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight:
+                                  FontWeight.w600,
+                              color:
+                                  AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Adicione um compromisso para acompanhar sua agenda.',
+                            textAlign:
+                                TextAlign.center,
+                            style:
+                                GoogleFonts.poppins(
+                              fontSize: 11,
+                              color:
+                                  AppTheme
+                                      .textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // =========================
+                  // BOTÃO NOVO COMPROMISSO
+                  // =========================
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.of(context)
+                            .push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const CriarCompromissoScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.add,
+                        size: 20,
+                      ),
+                      label: Text(
+                        'Novo compromisso',
+                        style:
+                            GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight:
+                              FontWeight.w600,
+                        ),
+                      ),
+                      style:
+                          ElevatedButton.styleFrom(
+                        backgroundColor:
+                            AppTheme.primary,
+                        foregroundColor:
+                            Colors.white,
+                        elevation: 0,
+                        padding:
+                            const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -300,6 +446,9 @@ class InicioTab extends StatelessWidget {
     );
   }
 
+  // =========================
+  // ENCONTRAR PRÓXIMO COMPROMISSO
+  // =========================
   static Compromisso? _encontrarProximoCompromisso(
     List<Compromisso> compromissos,
     DateTime agora,
@@ -314,18 +463,21 @@ class InicioTab extends StatelessWidget {
     }
 
     futuros.sort(
-      (a, b) => a.data!.compareTo(b.data!),
+      (a, b) =>
+          a.data!.compareTo(b.data!),
     );
 
     return futuros.first;
   }
 
+  // =========================
+  // AVATAR
+  // =========================
   static Widget _avatar(double s) {
     return Container(
       width: s,
       height: s,
-      decoration:
-          const BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: AppTheme.primary,
       ),
@@ -337,6 +489,10 @@ class InicioTab extends StatelessWidget {
     );
   }
 }
+
+// =====================================================
+// RESUMO ROW
+// =====================================================
 
 class _ResumoRow extends StatelessWidget {
   final IconData icone;
@@ -420,6 +576,10 @@ class _ResumoRow extends StatelessWidget {
   }
 }
 
+// =====================================================
+// CARD DO COMPROMISSO
+// =====================================================
+
 class _CompromissoCard
     extends StatelessWidget {
   final Compromisso c;
@@ -494,7 +654,9 @@ class _CompromissoCard
               ],
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Column(
               crossAxisAlignment:
@@ -523,6 +685,7 @@ class _CompromissoCard
               ],
             ),
           ),
+
           Text(
             c.horario,
             style:
@@ -539,6 +702,10 @@ class _CompromissoCard
     );
   }
 }
+
+// =====================================================
+// MINI CALENDÁRIO
+// =====================================================
 
 class _MiniCalendar
     extends StatelessWidget {
@@ -571,7 +738,11 @@ class _MiniCalendar
 
   @override
   Widget build(BuildContext context) {
-    final primeiro = DateTime(ano, mes, 1);
+    final primeiro = DateTime(
+      ano,
+      mes,
+      1,
+    );
 
     final diasNoMes =
         DateTime(ano, mes + 1, 0).day;
@@ -592,16 +763,28 @@ class _MiniCalendar
       'Su',
     ];
 
-    final flat = <Map<String, int>>[];
+    final flat =
+        <Map<String, int>>[];
 
-    for (int i = 0; i < offset; i++) {
+    for (
+      int i = 0;
+      i < offset;
+      i++
+    ) {
       flat.add({
-        'd': mesAntDias - offset + 1 + i,
+        'd': mesAntDias -
+            offset +
+            1 +
+            i,
         'cur': 0,
       });
     }
 
-    for (int d = 1; d <= diasNoMes; d++) {
+    for (
+      int d = 1;
+      d <= diasNoMes;
+      d++
+    ) {
       flat.add({
         'd': d,
         'cur': 1,
@@ -659,7 +842,9 @@ class _MiniCalendar
               ),
             ),
           ),
+
           const SizedBox(height: 8),
+
           Row(
             children: labels
                 .map(
@@ -672,9 +857,8 @@ class _MiniCalendar
                           fontSize: 10,
                           fontWeight:
                               FontWeight.w700,
-                          color:
-                              AppTheme
-                                  .textLight,
+                          color: AppTheme
+                              .textLight,
                         ),
                       ),
                     ),
@@ -682,8 +866,14 @@ class _MiniCalendar
                 )
                 .toList(),
           ),
+
           const SizedBox(height: 4),
-          for (int w = 0; w < 6; w++)
+
+          for (
+            int w = 0;
+            w < 6;
+            w++
+          )
             Padding(
               padding:
                   const EdgeInsets.symmetric(
@@ -691,9 +881,11 @@ class _MiniCalendar
               ),
               child: Row(
                 children: [
-                  for (int dow = 0;
-                      dow < 7;
-                      dow++)
+                  for (
+                    int dow = 0;
+                    dow < 7;
+                    dow++
+                  )
                     _celula(
                       flat[w * 7 + dow],
                       dow,
@@ -717,14 +909,17 @@ class _MiniCalendar
         cur && d == diaDestaque;
 
     final temCompromisso =
-        cur && diasComCompromisso.contains(d);
+        cur &&
+        diasComCompromisso.contains(d);
 
-    final fimDeSemana = dow >= 5;
+    final fimDeSemana =
+        dow >= 5;
 
     Color cor;
 
     if (!cur) {
-      cor = const Color(0xFFC4D3CE);
+      cor =
+          const Color(0xFFC4D3CE);
     } else if (destaque) {
       cor = Colors.white;
     } else if (fimDeSemana) {
@@ -746,7 +941,8 @@ class _MiniCalendar
                 )
               : temCompromisso
                   ? BoxDecoration(
-                      shape: BoxShape.circle,
+                      shape:
+                          BoxShape.circle,
                       border: Border.all(
                         color:
                             AppTheme.primary,
@@ -759,10 +955,11 @@ class _MiniCalendar
             style:
                 GoogleFonts.poppins(
               fontSize: 11,
-              fontWeight: destaque ||
-                      temCompromisso
-                  ? FontWeight.w700
-                  : FontWeight.w500,
+              fontWeight:
+                  destaque ||
+                          temCompromisso
+                      ? FontWeight.w700
+                      : FontWeight.w500,
               color: cor,
             ),
           ),

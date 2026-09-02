@@ -15,7 +15,12 @@ class AlertasScreen extends StatelessWidget {
     final medicamentosPendentes =
         state.remedios.where((remedio) => !remedio.tomado).toList();
 
-    final compromissos = state.compromissos;
+final agora = DateTime.now();
+
+    final compromissos = state.compromissos.where((compromisso) {
+      final data = compromisso.data;
+      return data != null && !data.isBefore(agora);
+    }).toList();
 
     final totalAlertas =
         medicamentosPendentes.length + compromissos.length;
