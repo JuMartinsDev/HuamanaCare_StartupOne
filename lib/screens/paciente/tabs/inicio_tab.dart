@@ -4,35 +4,80 @@ import 'package:provider/provider.dart';
 import '../../../theme/app_theme.dart';
 import '../../../models/app_state.dart';
 import '../../../models/models.dart';
-import '../../../data/mock_data.dart';
+import '../paciente_home.dart';
+import '../alertas_screen.dart';
 
 class InicioTab extends StatelessWidget {
   const InicioTab({super.key});
+
+  static const List<String> _meses = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final p = state.paciente;
-    final pendentes = state.remedios.where((r) => !r.tomado).length;
-    final c = MockData.compromisso;
+
+    final agora = DateTime.now();
+
+    final pendentes =
+        state.remedios.where((r) => !r.tomado).length;
+
+    final totalAlertas =
+        pendentes + state.compromissos.length;
+
+    final proximoCompromisso =
+        _encontrarProximoCompromisso(
+      state.compromissos,
+      agora,
+    );
+
+    final diasComCompromisso = state.compromissos
+        .where((c) => c.data != null)
+        .where(
+          (c) =>
+              c.data!.year == agora.year &&
+              c.data!.month == agora.month,
+        )
+        .map((c) => c.data!.day)
+        .toSet();
 
     return SafeArea(
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header verde + card do paciente sobreposto ──
             Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 56),
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    24,
+                    24,
+                    56,
+                  ),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF7CC4B6), Color(0xFF4EA596)],
+                      colors: [
+                        Color(0xFF7CC4B6),
+                        Color(0xFF4EA596),
+                      ],
                     ),
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(28),
@@ -40,18 +85,29 @@ class InicioTab extends StatelessWidget {
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      Text('Olá, ${p.nome.split(' ').first} !',
-                          style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white)),
+                      Text(
+                        'Olá, ${p.nome.split(' ').first} !',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Hoje é dia 12 de maio de 2026',
-                          style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.9))),
+                      Text(
+                        'Hoje é dia ${agora.day} de '
+                        '${_meses[agora.month - 1]} de '
+                        '${agora.year}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.white.withValues(
+                            alpha: 0.9,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -59,89 +115,181 @@ class InicioTab extends StatelessWidget {
                   left: 20,
                   right: 20,
                   bottom: -34,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6)),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        _avatar(56),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(p.nome,
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.textPrimary)),
-                              const SizedBox(height: 2),
-                              Text('${p.idade} anos  .  ID: ${p.id}',
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: AppTheme.textSecondary)),
-                            ],
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const PacienteHome(
+                            abaInicial: 4,
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios,
-                            size: 16, color: AppTheme.textLight),
-                      ],
+                      );
+                    },
+                    borderRadius:
+                        BorderRadius.circular(16),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius:
+                            BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black
+                                .withValues(alpha: 0.06),
+                            blurRadius: 16,
+                            offset:
+                                const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          _avatar(56),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.nome,
+                                  style:
+                                      GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight:
+                                        FontWeight.w700,
+                                    color: AppTheme
+                                        .textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${p.idade} anos  .  ID: ${p.id}',
+                                  style:
+                                      GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: AppTheme
+                                        .textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color:
+                                AppTheme.textLight,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 50),
-
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 20,
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Resumo do dia',
-                          style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary)),
-                      Text('Ver tudo',
-                          style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.accent)),
+                      Text(
+                        'Resumo do dia',
+                        style:
+                            GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight:
+                              FontWeight.w700,
+                          color:
+                              AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Ver tudo',
+                        style:
+                            GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight:
+                              FontWeight.w600,
+                          color: AppTheme.accent,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   _ResumoRow(
-                      icone: Icons.medication_outlined,
-                      titulo: 'Medicamentos',
-                      sub: '$pendentes pendentes'),
+                    icone:
+                        Icons.medication_outlined,
+                    titulo: 'Medicamentos',
+                    sub: '$pendentes pendentes',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const PacienteHome(
+                            abaInicial: 3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 10),
                   _ResumoRow(
-                      icone: Icons.notifications_none_rounded,
-                      titulo: 'Alertas',
-                      sub: '1 não lido'),
+                    icone:
+                        Icons.notifications_none_rounded,
+                    titulo: 'Alertas',
+                    sub: totalAlertas == 0
+                        ? 'Nenhum alerta'
+                        : '$totalAlertas '
+                            '${totalAlertas == 1 ? 'alerta' : 'alertas'}',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const AlertasScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 22),
-                  Text('Próximo compromisso',
-                      style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary)),
+                  Text(
+                    'Próximo compromisso',
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight:
+                          FontWeight.w700,
+                      color:
+                          AppTheme.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  const _MiniCalendar(mes: 5, ano: 2026, diaDestaque: 15),
+                  _MiniCalendar(
+                    mes: agora.month,
+                    ano: agora.year,
+                    diaDestaque: agora.day,
+                    diasComCompromisso:
+                        diasComCompromisso,
+                  ),
                   const SizedBox(height: 12),
-                  _CompromissoCard(c: c),
+                  if (proximoCompromisso != null)
+                    _CompromissoCard(
+                      c: proximoCompromisso,
+                    )
+                  else
+                    const SizedBox.shrink(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -152,201 +300,404 @@ class InicioTab extends StatelessWidget {
     );
   }
 
-  static Widget _avatar(double s) => Container(
-        width: s,
-        height: s,
-        decoration:
-            const BoxDecoration(shape: BoxShape.circle, color: AppTheme.primary),
-        child: const Icon(Icons.person, color: Colors.white, size: 26),
-      );
+  static Compromisso? _encontrarProximoCompromisso(
+    List<Compromisso> compromissos,
+    DateTime agora,
+  ) {
+    final futuros = compromissos
+        .where((c) => c.data != null)
+        .where((c) => !c.data!.isBefore(agora))
+        .toList();
+
+    if (futuros.isEmpty) {
+      return null;
+    }
+
+    futuros.sort(
+      (a, b) => a.data!.compareTo(b.data!),
+    );
+
+    return futuros.first;
+  }
+
+  static Widget _avatar(double s) {
+    return Container(
+      width: s,
+      height: s,
+      decoration:
+          const BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.primary,
+      ),
+      child: const Icon(
+        Icons.person,
+        color: Colors.white,
+        size: 26,
+      ),
+    );
+  }
 }
 
 class _ResumoRow extends StatelessWidget {
   final IconData icone;
   final String titulo;
   final String sub;
-  const _ResumoRow(
-      {required this.icone, required this.titulo, required this.sub});
+  final VoidCallback? onTap;
+
+  const _ResumoRow({
+    required this.icone,
+    required this.titulo,
+    required this.sub,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Row(
-        children: [
-          Icon(icone, size: 20, color: AppTheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titulo,
-                    style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary)),
-                const SizedBox(height: 2),
-                Text(sub,
-                    style: GoogleFonts.poppins(
-                        fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius:
+          BorderRadius.circular(14),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius:
+              BorderRadius.circular(14),
+          border: Border.all(
+            color: AppTheme.divider,
           ),
-          const Icon(Icons.arrow_forward_ios,
-              size: 14, color: AppTheme.textLight),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icone,
+              size: 20,
+              color: AppTheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight:
+                          FontWeight.w600,
+                      color:
+                          AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 12,
+                      color:
+                          AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: AppTheme.textLight,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _CompromissoCard extends StatelessWidget {
+class _CompromissoCard
+    extends StatelessWidget {
   final Compromisso c;
-  const _CompromissoCard({required this.c});
+
+  const _CompromissoCard({
+    required this.c,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding:
+          const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
+        borderRadius:
+            BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.divider,
+        ),
       ),
       child: Row(
         children: [
           Container(
             width: 48,
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(
+              vertical: 6,
+            ),
             decoration: BoxDecoration(
-              color: const Color(0xFFE0F4F1),
-              borderRadius: BorderRadius.circular(10),
+              color:
+                  const Color(0xFFE0F4F1),
+              borderRadius:
+                  BorderRadius.circular(10),
             ),
             child: Column(
               children: [
-                Text(c.mesAbrev,
-                    style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary)),
-                Text('${c.dia}',
-                    style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        color: AppTheme.primary)),
-                Text(c.diaAbrev,
-                    style: GoogleFonts.poppins(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primary)),
+                Text(
+                  c.mesAbrev,
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight:
+                        FontWeight.w700,
+                    color:
+                        AppTheme.primary,
+                  ),
+                ),
+                Text(
+                  '${c.dia}',
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight:
+                        FontWeight.w700,
+                    height: 1,
+                    color:
+                        AppTheme.primary,
+                  ),
+                ),
+                Text(
+                  c.diaAbrev,
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 9,
+                    fontWeight:
+                        FontWeight.w600,
+                    color:
+                        AppTheme.primary,
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                Text(c.titulo,
-                    style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary)),
-                Text(c.local,
-                    style: GoogleFonts.poppins(
-                        fontSize: 12, color: AppTheme.textSecondary)),
+                Text(
+                  c.titulo,
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight:
+                        FontWeight.w600,
+                    color:
+                        AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  c.local,
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 12,
+                    color:
+                        AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          Text(c.horario,
-              style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primary)),
+          Text(
+            c.horario,
+            style:
+                GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight:
+                  FontWeight.w700,
+              color:
+                  AppTheme.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _MiniCalendar extends StatelessWidget {
+class _MiniCalendar
+    extends StatelessWidget {
   final int mes;
   final int ano;
   final int diaDestaque;
-  const _MiniCalendar(
-      {required this.mes, required this.ano, required this.diaDestaque});
+  final Set<int> diasComCompromisso;
+
+  const _MiniCalendar({
+    required this.mes,
+    required this.ano,
+    required this.diaDestaque,
+    required this.diasComCompromisso,
+  });
+
+  static const List<String> _meses = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final primeiro = DateTime(ano, mes, 1);
-    final diasNoMes = DateTime(ano, mes + 1, 0).day;
-    final offset = primeiro.weekday - 1; // Mon=1..Sun=7
-    final mesAntDias = DateTime(ano, mes, 0).day;
-    const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+    final diasNoMes =
+        DateTime(ano, mes + 1, 0).day;
+
+    final offset =
+        primeiro.weekday - 1;
+
+    final mesAntDias =
+        DateTime(ano, mes, 0).day;
+
+    const labels = [
+      'Mo',
+      'Tu',
+      'We',
+      'Th',
+      'Fr',
+      'Sa',
+      'Su',
+    ];
 
     final flat = <Map<String, int>>[];
+
     for (int i = 0; i < offset; i++) {
-      flat.add({'d': mesAntDias - offset + 1 + i, 'cur': 0});
+      flat.add({
+        'd': mesAntDias - offset + 1 + i,
+        'cur': 0,
+      });
     }
+
     for (int d = 1; d <= diasNoMes; d++) {
-      flat.add({'d': d, 'cur': 1});
+      flat.add({
+        'd': d,
+        'cur': 1,
+      });
     }
+
     int prox = 1;
+
     while (flat.length < 42) {
-      flat.add({'d': prox++, 'cur': 0});
+      flat.add({
+        'd': prox++,
+        'cur': 0,
+      });
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding:
+          const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
+        borderRadius:
+            BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.divider,
+        ),
       ),
       child: Column(
         children: [
           Align(
-            alignment: Alignment.centerLeft,
+            alignment:
+                Alignment.centerLeft,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDF6E3),
-                borderRadius: BorderRadius.circular(8),
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 4,
               ),
-              child: Text('Maio',
-                  style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.accent)),
+              decoration:
+                  BoxDecoration(
+                color:
+                    const Color(0xFFFDF6E3),
+                borderRadius:
+                    BorderRadius.circular(8),
+              ),
+              child: Text(
+                _meses[mes - 1],
+                style:
+                    GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      AppTheme.accent,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: labels
-                .map((l) => Expanded(
-                      child: Center(
-                        child: Text(l,
-                            style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textLight)),
+                .map(
+                  (l) => Expanded(
+                    child: Center(
+                      child: Text(
+                        l,
+                        style:
+                            GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight:
+                              FontWeight.w700,
+                          color:
+                              AppTheme
+                                  .textLight,
+                        ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 4),
           for (int w = 0; w < 6; w++)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
+              padding:
+                  const EdgeInsets.symmetric(
+                vertical: 3,
+              ),
               child: Row(
                 children: [
-                  for (int dow = 0; dow < 7; dow++) _celula(flat[w * 7 + dow], dow),
+                  for (int dow = 0;
+                      dow < 7;
+                      dow++)
+                    _celula(
+                      flat[w * 7 + dow],
+                      dow,
+                    ),
                 ],
               ),
             ),
@@ -355,12 +706,23 @@ class _MiniCalendar extends StatelessWidget {
     );
   }
 
-  Widget _celula(Map<String, int> info, int dow) {
+  Widget _celula(
+    Map<String, int> info,
+    int dow,
+  ) {
     final d = info['d']!;
     final cur = info['cur'] == 1;
-    final destaque = cur && d == diaDestaque;
+
+    final destaque =
+        cur && d == diaDestaque;
+
+    final temCompromisso =
+        cur && diasComCompromisso.contains(d);
+
     final fimDeSemana = dow >= 5;
+
     Color cor;
+
     if (!cur) {
       cor = const Color(0xFFC4D3CE);
     } else if (destaque) {
@@ -370,6 +732,7 @@ class _MiniCalendar extends StatelessWidget {
     } else {
       cor = AppTheme.textPrimary;
     }
+
     return Expanded(
       child: Center(
         child: Container(
@@ -377,13 +740,32 @@ class _MiniCalendar extends StatelessWidget {
           height: 26,
           alignment: Alignment.center,
           decoration: destaque
-              ? const BoxDecoration(shape: BoxShape.circle, color: AppTheme.primary)
-              : null,
-          child: Text('$d',
-              style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: destaque ? FontWeight.w700 : FontWeight.w500,
-                  color: cor)),
+              ? const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primary,
+                )
+              : temCompromisso
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color:
+                            AppTheme.primary,
+                        width: 1.5,
+                      ),
+                    )
+                  : null,
+          child: Text(
+            '$d',
+            style:
+                GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: destaque ||
+                      temCompromisso
+                  ? FontWeight.w700
+                  : FontWeight.w500,
+              color: cor,
+            ),
+          ),
         ),
       ),
     );

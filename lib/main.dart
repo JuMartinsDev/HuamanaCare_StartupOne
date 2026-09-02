@@ -8,18 +8,25 @@ import 'models/app_state.dart';
 import 'router/app_router.dart';
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await initializeDateFormatting('pt_BR', null);
+  await initializeDateFormatting(
+    'pt_BR',
+    null,
+  );
+
+  final appState = AppState();
+
+  await appState.inicializar();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState(),
+    ChangeNotifierProvider.value(
+      value: appState,
       child: const HumanaCareApp(),
     ),
   );

@@ -69,12 +69,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // 3. Salva os dados básicos no AppState
       if (!mounted) return;
 
-      context.read<AppState>().usuarioCriado(
-        nome: nome,
-        email: email,
+      await context.read<AppState>().usuarioCriado(
+      nome: nome,
+      email: email,
       );
 
-      // 4. Vai para escolha do perfil
+      if (!mounted) return;
+
       context.go('/perfil');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;

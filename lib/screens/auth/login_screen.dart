@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../theme/app_theme.dart';
 import '../../models/app_state.dart';
 import '../../widgets/shared.dart';
+import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,23 +14,27 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailCtrl = TextEditingController(
-    text: 'gustavo@exemplo.com',
-  );
-
-  final _senhaCtrl = TextEditingController(
-    text: '123456',
-  );
+  final _emailCtrl = TextEditingController();
+  final _senhaCtrl = TextEditingController();
 
   bool _obscure = true;
   bool _loading = false;
   String? _erro;
 
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _senhaCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _entrar() async {
-    // Validação dos campos
-    if (_emailCtrl.text.trim().isEmpty || _senhaCtrl.text.isEmpty) {
+    final email = _emailCtrl.text.trim();
+    final senha = _senhaCtrl.text;
+
+    if (email.isEmpty || senha.isEmpty) {
       setState(() {
-        _erro = 'Preencha email e senha.';
+        _erro = 'Preencha seu email e sua senha.';
       });
       return;
     }
@@ -42,11 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Login real usando Firebase Authentication
-      final sucesso = await context.read<AppState>().loginFirebase(
-            _emailCtrl.text.trim(),
-            _senhaCtrl.text,
-          );
+      final appState = context.read<AppState>();
+
+      await appState.login(email, senha);
 
       if (!mounted) return;
 
@@ -54,28 +55,20 @@ class _LoginScreenState extends State<LoginScreen> {
         _loading = false;
       });
 
-      if (sucesso) {
-        context.go('/paciente');
+      // Depois do login, verifica se o usuário já possui perfil.
+      if (appState.perfil.isEmpty) {
+        context.go('/perfil');
       } else {
-        setState(() {
-          _erro = 'Email ou senha incorretos.';
-        });
+        context.go('/paciente');
       }
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
         _loading = false;
-        _erro = 'Não foi possível realizar o login. Tente novamente.';
+        _erro = e.toString().replaceFirst('Exception: ', '');
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    _senhaCtrl.dispose();
-    super.dispose();
   }
 
   @override
@@ -89,142 +82,113 @@ class _LoginScreenState extends State<LoginScreen> {
             vertical: 32,
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 32),
-
               const AuthHeader(),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 36),
 
-              // Título
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Login',
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
+              Text(
+                'Entrar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
 
-              // Email
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Email',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
-                  ),
+              Text(
+                'Acesse sua conta para continuar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
                 ),
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 28),
 
               HCField(
-                hint: 'seuemail@exemplo.com',
+                hint: 'Email',
                 controller: _emailCtrl,
                 keyboard: TextInputType.emailAddress,
               ),
 
-              const SizedBox(height: 16),
-
-              // Senha
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Senha',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 6),
+              const SizedBox(height: 14),
 
               HCField(
-                hint: '••••••••',
+                hint: 'Senha',
                 controller: _senhaCtrl,
                 obscure: _obscure,
                 suffix: IconButton(
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppTheme.textLight,
-                  ),
                   onPressed: () {
                     setState(() {
                       _obscure = !_obscure;
                     });
                   },
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ),
 
-              // Erro
               if (_erro != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+
                 Text(
                   _erro!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    color: AppTheme.error,
-                    fontSize: 13,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
                   ),
                 ),
               ],
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Entrar
               HCButton(
                 label: 'Entrar',
                 onTap: _entrar,
                 loading: _loading,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // Esqueci a senha
               TextButton(
-                onPressed: () {},
+                onPressed: _loading
+                    ? null
+                    : () {
+                        context.go('/register');
+                      },
                 child: Text(
-                  'Esqueci a senha',
-                  style: GoogleFonts.poppins(
-                    color: AppTheme.textSecondary,
+                  'Ainda não tenho uma conta',
+                  style: TextStyle(
+                    color: AppTheme.primary,
                     fontSize: 13,
                   ),
                 ),
               ),
 
-              const Divider(
-                height: 32,
-                color: AppTheme.divider,
-              ),
+              const SizedBox(height: 8),
 
-              // Criar conta
-              HCOutlineButton(
-                label: 'Cria conta',
-                onTap: () => context.go('/register'),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Termos
               TextButton(
-                onPressed: () {},
+                onPressed: _loading
+                    ? null
+                    : () {
+                        // Recuperação de senha será implementada
+                        // posteriormente com Firebase Auth.
+                      },
                 child: Text(
-                  'Termos de uso',
-                  style: GoogleFonts.poppins(
-                    color: AppTheme.textLight,
+                  'Esqueci minha senha',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -236,4 +200,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

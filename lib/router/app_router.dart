@@ -7,6 +7,8 @@ import '../screens/auth/perfil_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/paciente/paciente_home.dart';
 import '../screens/paciente/tabs/sos_screen.dart';
+import '../screens/paciente/editar_perfil_screen.dart';
+import '../screens/paciente/alertas_screen.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
@@ -36,6 +38,14 @@ class AppRouter {
       GoRoute(
         path: '/sos',
         builder: (_, __) => const SosScreen(),
+      ),
+      GoRoute(
+        path: '/editar-perfil',
+        builder: (_, __) => const EditarPerfilScreen(),
+      ),
+      GoRoute(
+        path: '/alertas',
+        builder: (_, __) => const AlertasScreen(),
       ),
     ],
 

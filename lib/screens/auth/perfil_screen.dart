@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../theme/app_theme.dart';
 import '../../models/app_state.dart';
-import '../../widgets/shared.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -37,9 +36,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Future<void> _continuar() async {
     if (_sel == null) return;
-      await context.read<AppState>().definirPerfil(_sel!);
-    if (!mounted) return;
+
+    try {
+      await context.read<AppState>().definirPerfil(
+            _sel!,
+          );
+
+      if (!mounted) return;
+
       context.go('/paciente');
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível salvar o perfil. Tente novamente.',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -48,75 +64,126 @@ class _PerfilScreenState extends State<PerfilScreen> {
       backgroundColor: AppTheme.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.all(24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => context.go('/login'),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    size: 20,
-                    color: AppTheme.textPrimary,
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              const AuthHeader(),
-
-              const SizedBox(height: 36),
-
               Text(
-                'Como você deseja usar o\nHumanaCare?',
-                textAlign: TextAlign.center,
+                'Escolha seu perfil',
                 style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  height: 1.3,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Selecione o perfil que melhor te\nrepresenta',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
                   color: AppTheme.primary,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Como você deseja utilizar o HumanaCare?',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _opcoes.length,
+                  itemBuilder: (context, index) {
+                    final opcao = _opcoes[index];
+                    final id = opcao['id']!;
+                    final selecionado = _sel == id;
 
-              const SizedBox(height: 28),
-
-              ..._opcoes.map(
-                (o) => _PerfilTile(
-                  titulo: o['titulo']!,
-                  desc: o['desc']!,
-                  sel: _sel == o['id'],
-                  onTap: () {
-                    setState(() {
-                      _sel = o['id'];
-                    });
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _sel = id;
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(
+                          bottom: 16,
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: selecionado
+                                ? AppTheme.primary
+                                : Colors.grey.shade300,
+                            width: selecionado ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selecionado
+                                      ? AppTheme.primary
+                                      : Colors.grey,
+                                  width: 2,
+                                ),
+                              ),
+                              child: selecionado
+                                  ? Center(
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppTheme.primary,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    opcao['titulo']!,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    opcao['desc']!,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),
-
-              const Spacer(),
-
-              HCButton(
-                label: 'Continuar',
-                onTap: _sel == null ? null : _continuar,
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _sel == null ? null : _continuar,
+                  child: const Text(
+                    'Continuar',
+                  ),
+                ),
               ),
-
-              const SizedBox(height: 28),
             ],
           ),
         ),
@@ -124,85 +191,3 @@ class _PerfilScreenState extends State<PerfilScreen> {
     );
   }
 }
-
-class _PerfilTile extends StatelessWidget {
-  final String titulo;
-  final String desc;
-  final bool sel;
-  final VoidCallback onTap;
-
-  const _PerfilTile({
-    required this.titulo,
-    required this.desc,
-    required this.sel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 18,
-        ),
-        decoration: BoxDecoration(
-          color: sel
-              ? const Color(0xFFE0F4F1)
-              : AppTheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: sel
-                ? AppTheme.primary
-                : AppTheme.divider,
-            width: sel ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    titulo,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: sel
-                          ? AppTheme.primary
-                          : AppTheme.textPrimary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  Text(
-                    desc,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: sel
-                  ? AppTheme.primary
-                  : AppTheme.textLight,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
