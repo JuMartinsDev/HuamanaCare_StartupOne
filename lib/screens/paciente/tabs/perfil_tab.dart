@@ -17,6 +17,53 @@ class PerfilTab extends StatefulWidget {
 class _PerfilTabState extends State<PerfilTab> {
   int _abaSelecionada = 0;
 
+  Future<void> _confirmarSaida() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Sair da conta',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          content: Text(
+            'Tem certeza de que deseja sair da sua conta?',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Sair'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmar != true) return;
+
+    await context.read<AppState>().logout();
+
+    if (!mounted) return;
+
+    context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -87,9 +134,7 @@ class _PerfilTabState extends State<PerfilTab> {
                       size: 30,
                     ),
                   ),
-
                   const SizedBox(width: 16),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,9 +147,7 @@ class _PerfilTabState extends State<PerfilTab> {
                             color: AppTheme.textPrimary,
                           ),
                         ),
-
                         const SizedBox(height: 4),
-
                         Text(
                           p.id.isEmpty ? '' : 'ID: ${p.id}',
                           style: GoogleFonts.poppins(
@@ -137,7 +180,6 @@ class _PerfilTabState extends State<PerfilTab> {
                       setState(() => _abaSelecionada = 0);
                     },
                   ),
-
                   _TabButton(
                     label: 'Histórico',
                     selecionada: _abaSelecionada == 1,
@@ -145,7 +187,6 @@ class _PerfilTabState extends State<PerfilTab> {
                       setState(() => _abaSelecionada = 1);
                     },
                   ),
-
                   _TabButton(
                     label: 'Documentos',
                     selecionada: _abaSelecionada == 2,
@@ -171,6 +212,34 @@ class _PerfilTabState extends State<PerfilTab> {
 
             // ── Cuidador ──────────────────────────────────────────────
             if (_abaSelecionada == 0) _CardCuidador(p: p),
+
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _confirmarSaida,
+                icon: const Icon(
+                  Icons.logout_outlined,
+                  size: 19,
+                ),
+                label: const Text(
+                  'Sair da conta',
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: BorderSide(
+                    color: Colors.red.withValues(alpha: 0.35),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -265,9 +334,7 @@ class _Historico extends StatelessWidget {
                     size: 38,
                     color: AppTheme.textSecondary.withValues(alpha: 0.6),
                   ),
-
                   const SizedBox(height: 10),
-
                   Text(
                     'Nenhum histórico disponível.',
                     textAlign: TextAlign.center,
@@ -306,8 +373,7 @@ class _HistoricoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = historico.data;
 
-    final dataFormatada =
-        '${data.day.toString().padLeft(2, '0')}/'
+    final dataFormatada = '${data.day.toString().padLeft(2, '0')}/'
         '${data.month.toString().padLeft(2, '0')}/'
         '${data.year}';
 
@@ -329,9 +395,7 @@ class _HistoricoItem extends StatelessWidget {
               size: 20,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,9 +408,7 @@ class _HistoricoItem extends StatelessWidget {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   historico.descricao,
                   style: GoogleFonts.poppins(
@@ -354,9 +416,7 @@ class _HistoricoItem extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   dataFormatada,
                   style: GoogleFonts.poppins(
@@ -392,41 +452,34 @@ class _Documentos extends StatelessWidget {
           titulo: 'CPF',
           valor: paciente.cpf,
         ),
-
         _DocumentoItem(
           icone: Icons.credit_card_outlined,
           titulo: 'RG / CIN',
           valor: paciente.rgCin,
         ),
-
         _DocumentoItem(
           icone: Icons.account_balance_outlined,
           titulo: 'Órgão expedidor',
           valor: paciente.orgaoExpedidor,
         ),
-
         _DocumentoItem(
           icone: Icons.calendar_today_outlined,
           titulo: 'Data de emissão',
           valor: paciente.dataEmissaoDocumento,
         ),
-
         _DocumentoItem(
           icone: Icons.health_and_safety_outlined,
           titulo: 'Cartão SUS',
           valor: paciente.cartaoSus,
         ),
-
         const SizedBox(height: 8),
-
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (_) =>
-                    const _EditarDocumentosDialog(),
+                builder: (_) => const _EditarDocumentosDialog(),
               );
             },
             icon: const Icon(
@@ -480,9 +533,7 @@ class _DocumentoItem extends StatelessWidget {
               color: AppTheme.primary,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,9 +545,7 @@ class _DocumentoItem extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   informado ? valor : 'Não informado',
                   style: GoogleFonts.poppins(
@@ -528,8 +577,7 @@ class _EditarDocumentosDialog extends StatefulWidget {
       _EditarDocumentosDialogState();
 }
 
-class _EditarDocumentosDialogState
-    extends State<_EditarDocumentosDialog> {
+class _EditarDocumentosDialogState extends State<_EditarDocumentosDialog> {
   late final TextEditingController _cpfController;
   late final TextEditingController _rgCinController;
   late final TextEditingController _orgaoController;
@@ -542,8 +590,7 @@ class _EditarDocumentosDialogState
   void initState() {
     super.initState();
 
-    final paciente =
-        context.read<AppState>().paciente;
+    final paciente = context.read<AppState>().paciente;
 
     _cpfController = TextEditingController(
       text: paciente.cpf,
@@ -557,13 +604,11 @@ class _EditarDocumentosDialogState
       text: paciente.orgaoExpedidor,
     );
 
-    _dataEmissaoController =
-        TextEditingController(
+    _dataEmissaoController = TextEditingController(
       text: paciente.dataEmissaoDocumento,
     );
 
-    _cartaoSusController =
-        TextEditingController(
+    _cartaoSusController = TextEditingController(
       text: paciente.cartaoSus,
     );
   }
@@ -589,8 +634,7 @@ class _EditarDocumentosDialogState
             cpf: _cpfController.text,
             rgCin: _rgCinController.text,
             orgaoExpedidor: _orgaoController.text,
-            dataEmissaoDocumento:
-                _dataEmissaoController.text,
+            dataEmissaoDocumento: _dataEmissaoController.text,
             cartaoSus: _cartaoSusController.text,
           );
 
@@ -635,7 +679,6 @@ class _EditarDocumentosDialogState
           color: AppTheme.textPrimary,
         ),
       ),
-
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -647,9 +690,7 @@ class _EditarDocumentosDialogState
                 color: AppTheme.textSecondary,
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
               controller: _cpfController,
               keyboardType: TextInputType.number,
@@ -661,9 +702,7 @@ class _EditarDocumentosDialogState
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             TextField(
               controller: _rgCinController,
               decoration: const InputDecoration(
@@ -673,9 +712,7 @@ class _EditarDocumentosDialogState
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             TextField(
               controller: _orgaoController,
               decoration: const InputDecoration(
@@ -686,9 +723,7 @@ class _EditarDocumentosDialogState
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             TextField(
               controller: _dataEmissaoController,
               keyboardType: TextInputType.datetime,
@@ -700,9 +735,7 @@ class _EditarDocumentosDialogState
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             TextField(
               controller: _cartaoSusController,
               keyboardType: TextInputType.number,
@@ -716,7 +749,6 @@ class _EditarDocumentosDialogState
           ],
         ),
       ),
-
       actions: [
         TextButton(
           onPressed: _salvando
@@ -728,7 +760,6 @@ class _EditarDocumentosDialogState
             'Cancelar',
           ),
         ),
-
         FilledButton(
           onPressed: _salvando ? null : _salvar,
           child: _salvando
@@ -768,19 +799,15 @@ class _CardCuidador extends StatelessWidget {
           label: 'Nome',
           value: p.cuidadorNome,
         ),
-
         _InfoRow(
           label: 'Turno',
           value: p.cuidadorTurno,
         ),
-
         _InfoRow(
           label: 'Carga horária',
           value: p.cuidadorCarga,
         ),
-
         const SizedBox(height: 8),
-
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 12,
@@ -844,9 +871,7 @@ class _InfoCard extends StatelessWidget {
               color: AppTheme.textPrimary,
             ),
           ),
-
           const SizedBox(height: 16),
-
           ...children,
         ],
       ),
@@ -877,9 +902,7 @@ class _InfoRow extends StatelessWidget {
               color: AppTheme.textSecondary,
             ),
           ),
-
           const SizedBox(height: 3),
-
           Text(
             value.isEmpty ? 'Não informado' : value,
             style: GoogleFonts.poppins(
@@ -913,9 +936,7 @@ class _TabButton extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: selecionada
-                ? AppTheme.surface
-                : Colors.transparent,
+            color: selecionada ? AppTheme.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           alignment: Alignment.center,
@@ -923,12 +944,8 @@ class _TabButton extends StatelessWidget {
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              fontWeight: selecionada
-                  ? FontWeight.w600
-                  : FontWeight.w400,
-              color: selecionada
-                  ? AppTheme.primary
-                  : AppTheme.textSecondary,
+              fontWeight: selecionada ? FontWeight.w600 : FontWeight.w400,
+              color: selecionada ? AppTheme.primary : AppTheme.textSecondary,
             ),
           ),
         ),

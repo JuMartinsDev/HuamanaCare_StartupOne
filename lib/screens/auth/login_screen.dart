@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -71,6 +72,130 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _esqueciMinhaSenha() async {
+    final emailController = TextEditingController(
+      text: _emailCtrl.text.trim(),
+    );
+
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Redefinir senha',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Digite o email da sua conta. Enviaremos um link para você criar uma nova senha.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'seuemail@email.com',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final email = emailController.text.trim();
+
+                if (email.isEmpty) {
+                  return;
+                }
+
+                Navigator.of(dialogContext).pop(email);
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    emailController.dispose();
+
+    if (!mounted || email == null || email.isEmpty) {
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: email,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Email de redefinição enviado! Verifique sua caixa de entrada.',
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      String mensagem;
+
+      switch (e.code) {
+        case 'invalid-email':
+          mensagem = 'Informe um email válido.';
+          break;
+        case 'user-not-found':
+          mensagem = 'Não encontramos uma conta com esse email.';
+          break;
+        case 'too-many-requests':
+          mensagem =
+              'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+          break;
+        default:
+          mensagem =
+              'Não foi possível enviar o email. Tente novamente.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensagem),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível enviar o email. Tente novamente.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,7 +265,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               if (_erro != null) ...[
                 const SizedBox(height: 12),
-
                 Text(
                   _erro!,
                   textAlign: TextAlign.center,
@@ -181,10 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextButton(
                 onPressed: _loading
                     ? null
-                    : () {
-                        // Recuperação de senha será implementada
-                        // posteriormente com Firebase Auth.
-                      },
+                    : _esqueciMinhaSenha,
                 child: Text(
                   'Esqueci minha senha',
                   style: TextStyle(

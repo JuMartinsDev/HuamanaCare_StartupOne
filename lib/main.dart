@@ -22,25 +22,32 @@ Future<void> main() async {
   );
 
   final appState = AppState();
+
   await appState.inicializar();
 
   runApp(
     ChangeNotifierProvider.value(
       value: appState,
-      child: const HumanaCareApp(),
+      child: HumanaCareApp(
+        appState: appState,
+      ),
     ),
   );
 }
 
 class HumanaCareApp extends StatelessWidget {
-  const HumanaCareApp({super.key});
+  final AppState appState;
+
+  const HumanaCareApp({
+    super.key,
+    required this.appState,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'HumanaCare',
       debugShowCheckedModeBanner: false,
-
       theme: AppTheme.light,
 
       // =========================
@@ -59,7 +66,10 @@ class HumanaCareApp extends StatelessWidget {
         Locale('en', 'US'),
       ],
 
-      routerConfig: AppRouter.router(),
+      // =========================
+      // ROTAS
+      // =========================
+      routerConfig: AppRouter.router(appState),
     );
   }
 }

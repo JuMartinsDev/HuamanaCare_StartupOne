@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../models/app_state.dart';
 import '../screens/auth/login_screen.dart';
@@ -11,74 +10,85 @@ import '../screens/paciente/editar_perfil_screen.dart';
 import '../screens/paciente/alertas_screen.dart';
 
 class AppRouter {
-  static final GoRouter _router = GoRouter(
-    initialLocation: '/login',
+  static GoRouter router(AppState appState) {
+    return GoRouter(
+      initialLocation: '/login',
 
-    routes: [
-      GoRoute(
-        path: '/login',
-        builder: (_, __) => const LoginScreen(),
-      ),
+      refreshListenable: appState,
 
-      GoRoute(
-        path: '/register',
-        builder: (_, __) => const RegisterScreen(),
-      ),
+      routes: [
+        GoRoute(
+          path: '/login',
+          builder: (_, __) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/register',
+          builder: (_, __) => const RegisterScreen(),
+        ),
+        GoRoute(
+          path: '/perfil',
+          builder: (_, __) => const PerfilScreen(),
+        ),
+        GoRoute(
+          path: '/paciente',
+          builder: (_, __) => const PacienteHome(),
+        ),
+        GoRoute(
+          path: '/sos',
+          builder: (_, __) => const SosScreen(),
+        ),
+        GoRoute(
+          path: '/editar-perfil',
+          builder: (_, __) => const EditarPerfilScreen(),
+        ),
+        GoRoute(
+          path: '/alertas',
+          builder: (_, __) => const AlertasScreen(),
+        ),
+      ],
 
-      GoRoute(
-        path: '/perfil',
-        builder: (_, __) => const PerfilScreen(),
-      ),
+      redirect: (context, state) {
+        final loggedIn = appState.logado;
+        final location = state.matchedLocation;
 
-      GoRoute(
-        path: '/paciente',
-        builder: (_, __) => const PacienteHome(),
-      ),
+        final isLogin = location == '/login';
+        final isRegister = location == '/register';
+        final isPerfil = location == '/perfil';
 
-      GoRoute(
-        path: '/sos',
-        builder: (_, __) => const SosScreen(),
-      ),
-      GoRoute(
-        path: '/editar-perfil',
-        builder: (_, __) => const EditarPerfilScreen(),
-      ),
-      GoRoute(
-        path: '/alertas',
-        builder: (_, __) => const AlertasScreen(),
-      ),
-    ],
+        // -----------------------------------------
+        // 1. Usuário NÃO autenticado
+        // -----------------------------------------
+        if (!loggedIn) {
+          if (isLogin || isRegister) {
+            return null;
+          }
 
-    redirect: (context, state) {
-      final appState = Provider.of<AppState>(
-        context,
-        listen: false,
-      );
+          return '/login';
+        }
 
-      final loggedIn = appState.logado;
-      final location = state.matchedLocation;
+        // -----------------------------------------
+        // 2. Usuário autenticado, mas ainda
+        // não escolheu o perfil
+        // -----------------------------------------
+        if (appState.perfil.isEmpty) {
+          if (isPerfil) {
+            return null;
+          }
 
-      // Rotas que podem ser acessadas sem estar logado
-      final rotasPublicas = {
-        '/login',
-        '/register',
-        '/perfil',
-      };
+          return '/perfil';
+        }
 
-      // Se não estiver logado e tentar acessar uma rota protegida
-      if (!loggedIn && !rotasPublicas.contains(location)) {
-        return '/login';
-      }
+        // -----------------------------------------
+        // 3. Usuário autenticado e com perfil
+        // -----------------------------------------
 
-      // Se estiver logado e tentar voltar para login
-      if (loggedIn && location == '/login') {
-        return '/paciente';
-      }
+        // Não faz sentido voltar para login/cadastro
+        if (isLogin || isRegister || isPerfil) {
+          return '/paciente';
+        }
 
-      return null;
-    },
-  );
-
-  static GoRouter router() => _router;
+        return null;
+      },
+    );
+  }
 }
-
