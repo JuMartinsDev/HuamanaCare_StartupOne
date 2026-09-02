@@ -63,6 +63,7 @@ class _RemediosTabState extends State<RemediosTab> {
       // ========================================================
       // HOJE
       // ========================================================
+
       case 0:
         return remedios.where((remedio) {
           return _estaAtivoNaData(
@@ -74,6 +75,7 @@ class _RemediosTabState extends State<RemediosTab> {
       // ========================================================
       // SEMANA
       // ========================================================
+
       case 1:
         return remedios.where((remedio) {
           for (int i = 0; i < 7; i++) {
@@ -95,6 +97,7 @@ class _RemediosTabState extends State<RemediosTab> {
       // ========================================================
       // TODOS
       // ========================================================
+
       default:
         return List<Remedio>.from(remedios);
     }
@@ -181,8 +184,13 @@ class _RemediosTabState extends State<RemediosTab> {
       return null;
     }
 
-    final hora = selecionado.hour.toString().padLeft(2, '0');
-    final minuto = selecionado.minute.toString().padLeft(2, '0');
+    final hora = selecionado.hour
+        .toString()
+        .padLeft(2, '0');
+
+    final minuto = selecionado.minute
+        .toString()
+        .padLeft(2, '0');
 
     return '$hora:$minuto';
   }
@@ -193,9 +201,11 @@ class _RemediosTabState extends State<RemediosTab> {
 
   void _abrirAdicionar() {
     final nome = TextEditingController();
+
     final tipo = TextEditingController(
       text: 'Comprimido',
     );
+
     final horario = TextEditingController();
 
     DateTime dataInicio = _inicioDoDia(
@@ -318,7 +328,9 @@ class _RemediosTabState extends State<RemediosTab> {
                             size: 20,
                             color: AppTheme.primary,
                           ),
+
                           const SizedBox(width: 10),
+
                           Expanded(
                             child: Column(
                               crossAxisAlignment:
@@ -329,11 +341,13 @@ class _RemediosTabState extends State<RemediosTab> {
                                   style:
                                       GoogleFonts.poppins(
                                     fontSize: 11,
-                                    color:
-                                        AppTheme.textSecondary,
+                                    color: AppTheme
+                                        .textSecondary,
                                   ),
                                 ),
+
                                 const SizedBox(height: 2),
+
                                 Text(
                                   horario.text.isEmpty
                                       ? 'Selecionar horário'
@@ -351,6 +365,7 @@ class _RemediosTabState extends State<RemediosTab> {
                               ],
                             ),
                           ),
+
                           const Icon(
                             Icons.chevron_right,
                             color:
@@ -420,6 +435,7 @@ class _RemediosTabState extends State<RemediosTab> {
 
                   if (erro != null) ...[
                     const SizedBox(height: 8),
+
                     Text(
                       erro!,
                       style: GoogleFonts.poppins(
@@ -448,8 +464,7 @@ class _RemediosTabState extends State<RemediosTab> {
                             final horarioTexto =
                                 horario.text.trim();
 
-                            final valido =
-                                RegExp(
+                            final valido = RegExp(
                               r'^([01]?\d|2[0-3]):[0-5]\d$',
                             ).hasMatch(
                               horarioTexto,
@@ -461,6 +476,7 @@ class _RemediosTabState extends State<RemediosTab> {
                                 () => erro =
                                     'Informe um nome e selecione um horário válido.',
                               );
+
                               return;
                             }
 
@@ -473,21 +489,21 @@ class _RemediosTabState extends State<RemediosTab> {
                               await context
                                   .read<AppState>()
                                   .addRemedio(
-                                    Remedio(
-                                      id: '',
-                                      nome: nomeTexto,
-                                      tipo: tipoTexto.isEmpty
-                                          ? 'COMPRIMIDO'
-                                          : tipoTexto
-                                              .toUpperCase(),
-                                      horario:
-                                          horarioTexto,
-                                      dataInicio:
-                                          dataInicio,
-                                      dataFim:
-                                          dataFim,
-                                    ),
-                                  );
+                                Remedio(
+                                  id: '',
+                                  nome: nomeTexto,
+                                  tipo: tipoTexto.isEmpty
+                                      ? 'COMPRIMIDO'
+                                      : tipoTexto
+                                          .toUpperCase(),
+                                  horario:
+                                      horarioTexto,
+                                  dataInicio:
+                                      dataInicio,
+                                  dataFim:
+                                      dataFim,
+                                ),
+                              );
 
                               if (!ctx.mounted) {
                                 return;
@@ -661,7 +677,9 @@ class _RemediosTabState extends State<RemediosTab> {
                             size: 20,
                             color: AppTheme.primary,
                           ),
+
                           const SizedBox(width: 10),
+
                           Expanded(
                             child: Column(
                               crossAxisAlignment:
@@ -672,11 +690,13 @@ class _RemediosTabState extends State<RemediosTab> {
                                   style:
                                       GoogleFonts.poppins(
                                     fontSize: 11,
-                                    color:
-                                        AppTheme.textSecondary,
+                                    color: AppTheme
+                                        .textSecondary,
                                   ),
                                 ),
+
                                 const SizedBox(height: 2),
+
                                 Text(
                                   horario.text.isEmpty
                                       ? 'Selecionar horário'
@@ -694,6 +714,7 @@ class _RemediosTabState extends State<RemediosTab> {
                               ],
                             ),
                           ),
+
                           const Icon(
                             Icons.chevron_right,
                             color:
@@ -763,6 +784,7 @@ class _RemediosTabState extends State<RemediosTab> {
 
                   if (erro != null) ...[
                     const SizedBox(height: 8),
+
                     Text(
                       erro!,
                       style: GoogleFonts.poppins(
@@ -791,8 +813,7 @@ class _RemediosTabState extends State<RemediosTab> {
                             final horarioTexto =
                                 horario.text.trim();
 
-                            final valido =
-                                RegExp(
+                            final valido = RegExp(
                               r'^([01]?\d|2[0-3]):[0-5]\d$',
                             ).hasMatch(
                               horarioTexto,
@@ -804,6 +825,7 @@ class _RemediosTabState extends State<RemediosTab> {
                                 () => erro =
                                     'Informe um nome e selecione um horário válido.',
                               );
+
                               return;
                             }
 
@@ -821,7 +843,8 @@ class _RemediosTabState extends State<RemediosTab> {
                                     ? 'COMPRIMIDO'
                                     : tipoTexto
                                         .toUpperCase(),
-                                horario: horarioTexto,
+                                horario:
+                                    horarioTexto,
                                 tomado: remedio.tomado,
                                 dataInicio:
                                     dataInicio,
@@ -832,8 +855,8 @@ class _RemediosTabState extends State<RemediosTab> {
                               await context
                                   .read<AppState>()
                                   .updateRemedio(
-                                    atualizado,
-                                  );
+                                atualizado,
+                              );
 
                               if (!ctx.mounted) {
                                 return;
@@ -922,6 +945,7 @@ class _RemediosTabState extends State<RemediosTab> {
               style: GoogleFonts.poppins(),
             ),
           ),
+
           TextButton(
             onPressed: () async {
               try {
@@ -1080,6 +1104,18 @@ class _RemediosTabState extends State<RemediosTab> {
                             remedios[i],
                           );
                         },
+
+                        // ==================================================
+                        // NOVO: ALTERAR PENDENTE / TOMADO
+                        // ==================================================
+
+                        onToggle: () async {
+                          await context
+                              .read<AppState>()
+                              .toggleRemedio(
+                                remedios[i].id,
+                              );
+                        },
                       );
                     },
                   ),
@@ -1140,7 +1176,8 @@ class _RemediosTabState extends State<RemediosTab> {
             HCButton(
               label:
                   '+  Adicionar medicamento',
-              onTap: _abrirAdicionar,
+              onTap:
+                  _abrirAdicionar,
             ),
           ],
         ),
@@ -1157,11 +1194,13 @@ class _MedCard extends StatelessWidget {
   final Remedio r;
   final VoidCallback onEditar;
   final VoidCallback onRemover;
+  final Future<void> Function() onToggle;
 
   const _MedCard({
     required this.r,
     required this.onEditar,
     required this.onRemover,
+    required this.onToggle,
   });
 
   @override
@@ -1183,18 +1222,27 @@ class _MedCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration:
-                const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.primary,
-            ),
-            child: const Icon(
-              Icons.medication,
-              color: Colors.white,
-              size: 22,
+          // ======================================================
+          // ÍCONE DO MEDICAMENTO
+          // ======================================================
+
+          InkWell(
+            onTap: onToggle,
+            borderRadius:
+                BorderRadius.circular(24),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration:
+                  const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primary,
+              ),
+              child: const Icon(
+                Icons.medication,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
           ),
 
@@ -1276,6 +1324,7 @@ class _MedCard extends StatelessWidget {
                           Navigator.pop(
                             context,
                           );
+
                           onEditar();
                         },
                       ),
@@ -1298,6 +1347,7 @@ class _MedCard extends StatelessWidget {
                           Navigator.pop(
                             context,
                           );
+
                           onRemover();
                         },
                       ),
@@ -1314,6 +1364,10 @@ class _MedCard extends StatelessWidget {
                   AppTheme.textSecondary,
             ),
           ),
+
+          // ======================================================
+          // STATUS
+          // ======================================================
 
           _pill(tomado),
         ],
@@ -1418,7 +1472,8 @@ class _DataSelector extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.poppins(
+                    style:
+                        GoogleFonts.poppins(
                       fontSize: 11,
                       color:
                           AppTheme.textSecondary,
@@ -1516,7 +1571,8 @@ class _Segmented extends StatelessWidget {
                     const EdgeInsets.symmetric(
                   vertical: 9,
                 ),
-                alignment: Alignment.center,
+                alignment:
+                    Alignment.center,
                 decoration:
                     BoxDecoration(
                   color: index == i
