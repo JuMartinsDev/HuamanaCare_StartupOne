@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/models.dart';
 
 class AppState extends ChangeNotifier {
@@ -60,6 +61,15 @@ class AppState extends ChangeNotifier {
       List.unmodifiable(_compromissos);
 
   // ============================================================
+  // HISTÓRICO
+  // ============================================================
+
+  List<Historico> _historico = [];
+
+  List<Historico> get historico =>
+      List.unmodifiable(_historico);
+
+  // ============================================================
   // MENSAGENS
   // ============================================================
 
@@ -70,7 +80,9 @@ class AppState extends ChangeNotifier {
   };
 
   List<Mensagem> mensagens(String canal) {
-    return List.unmodifiable(_msgs[canal] ?? []);
+    return List.unmodifiable(
+      _msgs[canal] ?? [],
+    );
   }
 
   // ============================================================
@@ -91,7 +103,9 @@ class AppState extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao restaurar sessão: $e');
+      debugPrint(
+        'Erro ao restaurar sessão: $e',
+      );
 
       _logado = false;
       _perfil = '';
@@ -114,7 +128,9 @@ class AppState extends ChangeNotifier {
       );
 
       if (credential.user == null) {
-        throw Exception('Usuário não encontrado.');
+        throw Exception(
+          'Usuário não encontrado.',
+        );
       }
 
       await _carregarDadosFirestore();
@@ -123,7 +139,9 @@ class AppState extends ChangeNotifier {
 
       notifyListeners();
     } on FirebaseAuthException catch (e) {
-      throw Exception(_mensagemErroFirebase(e));
+      throw Exception(
+        _mensagemErroFirebase(e),
+      );
     }
   }
 
@@ -145,14 +163,17 @@ class AppState extends ChangeNotifier {
     // PACIENTE
     // ----------------------------------------------------------
 
-    final pacienteDoc = await pacienteRef.get();
+    final pacienteDoc =
+        await pacienteRef.get();
 
-    if (pacienteDoc.exists && pacienteDoc.data() != null) {
+    if (pacienteDoc.exists &&
+        pacienteDoc.data() != null) {
       final dados = pacienteDoc.data()!;
 
       _paciente = Paciente.fromMap(dados);
 
-      _perfil = dados['perfil'] as String? ?? '';
+      _perfil =
+          dados['perfil'] as String? ?? '';
     } else {
       await pacienteRef.set(
         {
@@ -192,7 +213,9 @@ class AppState extends ChangeNotifier {
     // ----------------------------------------------------------
 
     final remediosSnapshot =
-        await pacienteRef.collection('remedios').get();
+        await pacienteRef
+            .collection('remedios')
+            .get();
 
     _remedios = remediosSnapshot.docs
         .map(
@@ -208,7 +231,9 @@ class AppState extends ChangeNotifier {
     // ----------------------------------------------------------
 
     final compromissosSnapshot =
-        await pacienteRef.collection('compromissos').get();
+        await pacienteRef
+            .collection('compromissos')
+            .get();
 
     _compromissos = compromissosSnapshot.docs
         .map(
@@ -218,6 +243,29 @@ class AppState extends ChangeNotifier {
           ),
         )
         .toList();
+
+    // ----------------------------------------------------------
+    // HISTÓRICO
+    // ----------------------------------------------------------
+
+    final historicoSnapshot =
+        await pacienteRef
+            .collection('historico')
+            .get();
+
+    _historico = historicoSnapshot.docs
+        .map(
+          (doc) => Historico.fromMap(
+            doc.id,
+            doc.data(),
+          ),
+        )
+        .toList();
+
+    // Mais recente primeiro.
+    _historico.sort(
+      (a, b) => b.data.compareTo(a.data),
+    );
 
     // ----------------------------------------------------------
     // MENSAGENS
@@ -230,7 +278,9 @@ class AppState extends ChangeNotifier {
   // REMÉDIOS
   // ============================================================
 
-  Future<void> toggleRemedio(String id) async {
+  Future<void> toggleRemedio(
+    String id,
+  ) async {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -238,7 +288,9 @@ class AppState extends ChangeNotifier {
     }
 
     final index =
-        _remedios.indexWhere((remedio) => remedio.id == id);
+        _remedios.indexWhere(
+      (remedio) => remedio.id == id,
+    );
 
     if (index == -1) {
       return;
@@ -260,18 +312,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addRemedio(Remedio remedio) async {
+  Future<void> addRemedio(
+    Remedio remedio,
+  ) async {
     final user = _auth.currentUser;
 
     if (user == null) {
       return;
     }
 
-    final docRef = await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .collection('remedios')
-        .add(remedio.toMap());
+    final docRef =
+        await _firestore
+            .collection('pacientes')
+            .doc(user.uid)
+            .collection('remedios')
+            .add(
+              remedio.toMap(),
+            );
 
     final novoRemedio = Remedio(
       id: docRef.id,
@@ -286,7 +343,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeRemedio(String id) async {
+  Future<void> removeRemedio(
+    String id,
+  ) async {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -320,13 +379,14 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    final docRef = await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .collection('compromissos')
-        .add(
-          compromisso.toMap(),
-        );
+    final docRef =
+        await _firestore
+            .collection('pacientes')
+            .doc(user.uid)
+            .collection('compromissos')
+            .add(
+              compromisso.toMap(),
+            );
 
     final novoCompromisso = Compromisso(
       id: docRef.id,
@@ -336,22 +396,41 @@ class AppState extends ChangeNotifier {
       dia: compromisso.dia,
       mesAbrev: compromisso.mesAbrev,
       diaAbrev: compromisso.diaAbrev,
-
-      // Mantém a data real do compromisso.
       data: compromisso.data,
     );
 
     _compromissos.add(novoCompromisso);
 
+    // Registra automaticamente no histórico.
+    await _registrarHistorico(
+      tipo: 'compromisso',
+      titulo: 'Compromisso criado',
+      descricao: compromisso.titulo,
+    );
+
     notifyListeners();
   }
 
-  Future<void> removeCompromisso(String id) async {
+  Future<void> removeCompromisso(
+    String id,
+  ) async {
     final user = _auth.currentUser;
 
     if (user == null) {
       return;
     }
+
+    final index =
+        _compromissos.indexWhere(
+      (compromisso) => compromisso.id == id,
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    final compromisso =
+        _compromissos[index];
 
     await _firestore
         .collection('pacientes')
@@ -360,8 +439,13 @@ class AppState extends ChangeNotifier {
         .doc(id)
         .delete();
 
-    _compromissos.removeWhere(
-      (compromisso) => compromisso.id == id,
+    _compromissos.removeAt(index);
+
+    // Registra automaticamente no histórico.
+    await _registrarHistorico(
+      tipo: 'compromisso',
+      titulo: 'Compromisso removido',
+      descricao: compromisso.titulo,
     );
 
     notifyListeners();
@@ -385,13 +469,125 @@ class AppState extends ChangeNotifier {
           compromisso.toMap(),
         );
 
-    final index = _compromissos.indexWhere(
+    final index =
+        _compromissos.indexWhere(
       (item) => item.id == compromisso.id,
     );
 
     if (index != -1) {
       _compromissos[index] = compromisso;
     }
+
+    // Registra automaticamente no histórico.
+    await _registrarHistorico(
+      tipo: 'compromisso',
+      titulo: 'Compromisso atualizado',
+      descricao: compromisso.titulo,
+    );
+
+    notifyListeners();
+  }
+
+  // ============================================================
+  // HISTÓRICO
+  // ============================================================
+
+  Future<void> _registrarHistorico({
+    required String tipo,
+    required String titulo,
+    required String descricao,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    final historico = Historico(
+      tipo: tipo,
+      titulo: titulo,
+      descricao: descricao,
+      data: DateTime.now(),
+    );
+
+    final docRef =
+        await _firestore
+            .collection('pacientes')
+            .doc(user.uid)
+            .collection('historico')
+            .add(
+              historico.toMap(),
+            );
+
+    final novoHistorico = Historico(
+      id: docRef.id,
+      tipo: historico.tipo,
+      titulo: historico.titulo,
+      descricao: historico.descricao,
+      data: historico.data,
+    );
+
+    _historico.add(novoHistorico);
+
+    _historico.sort(
+      (a, b) => b.data.compareTo(a.data),
+    );
+  }
+
+  Future<void> addHistorico(
+    Historico historico,
+  ) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    final docRef =
+        await _firestore
+            .collection('pacientes')
+            .doc(user.uid)
+            .collection('historico')
+            .add(
+              historico.toMap(),
+            );
+
+    final novoHistorico = Historico(
+      id: docRef.id,
+      tipo: historico.tipo,
+      titulo: historico.titulo,
+      descricao: historico.descricao,
+      data: historico.data,
+    );
+
+    _historico.add(novoHistorico);
+
+    _historico.sort(
+      (a, b) => b.data.compareTo(a.data),
+    );
+
+    notifyListeners();
+  }
+
+  Future<void> removeHistorico(
+    String id,
+  ) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    await _firestore
+        .collection('pacientes')
+        .doc(user.uid)
+        .collection('historico')
+        .doc(id)
+        .delete();
+
+    _historico.removeWhere(
+      (historico) => historico.id == id,
+    );
 
     notifyListeners();
   }
@@ -414,14 +610,15 @@ class AppState extends ChangeNotifier {
     ];
 
     for (final canal in canais) {
-      final snapshot = await _firestore
-          .collection('pacientes')
-          .doc(user.uid)
-          .collection('canais')
-          .doc(canal)
-          .collection('mensagens')
-          .orderBy('hora')
-          .get();
+      final snapshot =
+          await _firestore
+              .collection('pacientes')
+              .doc(user.uid)
+              .collection('canais')
+              .doc(canal)
+              .collection('mensagens')
+              .orderBy('hora')
+              .get();
 
       _msgs[canal] = snapshot.docs
           .map(
@@ -444,15 +641,16 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    final docRef = await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .collection('canais')
-        .doc(canal)
-        .collection('mensagens')
-        .add(
-          mensagem.toMap(),
-        );
+    final docRef =
+        await _firestore
+            .collection('pacientes')
+            .doc(user.uid)
+            .collection('canais')
+            .doc(canal)
+            .collection('mensagens')
+            .add(
+              mensagem.toMap(),
+            );
 
     final novaMensagem = Mensagem(
       id: docRef.id,
@@ -463,9 +661,14 @@ class AppState extends ChangeNotifier {
       remetente: mensagem.remetente,
     );
 
-    _msgs.putIfAbsent(canal, () => []);
+    _msgs.putIfAbsent(
+      canal,
+      () => [],
+    );
 
-    _msgs[canal]!.add(novaMensagem);
+    _msgs[canal]!.add(
+      novaMensagem,
+    );
 
     notifyListeners();
   }
@@ -491,7 +694,8 @@ class AppState extends ChangeNotifier {
           .doc(user.uid)
           .collection('sos_eventos')
           .add({
-        'dataHora': FieldValue.serverTimestamp(),
+        'dataHora':
+            FieldValue.serverTimestamp(),
         'status': 'acionado',
         'tipo': 'sos',
       });
@@ -501,7 +705,6 @@ class AppState extends ChangeNotifier {
       const Duration(seconds: 5),
       () {
         _sosAtivado = false;
-
         notifyListeners();
       },
     );
@@ -584,7 +787,8 @@ class AppState extends ChangeNotifier {
 
     _paciente = paciente;
 
-    // createUserWithEmailAndPassword já autentica o usuário.
+    // createUserWithEmailAndPassword
+    // já autentica o usuário.
     _logado = true;
     _perfil = '';
 
@@ -613,14 +817,21 @@ class AppState extends ChangeNotifier {
     final user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception('Usuário não autenticado.');
+      throw Exception(
+        'Usuário não autenticado.',
+      );
     }
+
+    // ----------------------------------------------------------
+    // CALCULAR IDADE
+    // ----------------------------------------------------------
 
     int idade = 0;
 
     if (dataNascimento.isNotEmpty) {
       try {
-        final partes = dataNascimento.split('/');
+        final partes =
+            dataNascimento.split('/');
 
         if (partes.length == 3) {
           final nascimento = DateTime(
@@ -631,11 +842,14 @@ class AppState extends ChangeNotifier {
 
           final hoje = DateTime.now();
 
-          idade = hoje.year - nascimento.year;
+          idade =
+              hoje.year - nascimento.year;
 
           if (hoje.month < nascimento.month ||
-              (hoje.month == nascimento.month &&
-                  hoje.day < nascimento.day)) {
+              (hoje.month ==
+                      nascimento.month &&
+                  hoje.day <
+                      nascimento.day)) {
             idade--;
           }
         }
@@ -643,6 +857,10 @@ class AppState extends ChangeNotifier {
         idade = _paciente.idade;
       }
     }
+
+    // ----------------------------------------------------------
+    // ATUALIZAR FIRESTORE
+    // ----------------------------------------------------------
 
     final dadosAtualizados = {
       'dataNascimento': dataNascimento,
@@ -669,6 +887,10 @@ class AppState extends ChangeNotifier {
       SetOptions(merge: true),
     );
 
+    // ----------------------------------------------------------
+    // ATUALIZAR ESTADO LOCAL
+    // ----------------------------------------------------------
+
     _paciente = Paciente(
       nome: _paciente.nome,
       idade: idade,
@@ -686,6 +908,17 @@ class AppState extends ChangeNotifier {
       cuidadorNome: cuidadorNome,
       cuidadorTurno: cuidadorTurno,
       cuidadorCarga: cuidadorCarga,
+    );
+
+    // ----------------------------------------------------------
+    // REGISTRAR NO HISTÓRICO
+    // ----------------------------------------------------------
+
+    await _registrarHistorico(
+      tipo: 'perfil',
+      titulo: 'Perfil atualizado',
+      descricao:
+          'Os dados do perfil foram atualizados.',
     );
 
     notifyListeners();
@@ -722,6 +955,7 @@ class AppState extends ChangeNotifier {
 
     _remedios = [];
     _compromissos = [];
+    _historico = [];
 
     _msgs['familia'] = [];
     _msgs['cuidador'] = [];

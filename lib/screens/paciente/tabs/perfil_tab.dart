@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/app_state.dart';
+import '../../../models/models.dart';
 import '../../../theme/app_theme.dart';
 
 class PerfilTab extends StatefulWidget {
@@ -65,7 +66,7 @@ class _PerfilTabState extends State<PerfilTab> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.textPrimary.withOpacity(0.06),
+                    color: AppTheme.textPrimary.withValues(alpha: 0.06),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -156,9 +157,9 @@ class _PerfilTabState extends State<PerfilTab> {
             if (_abaSelecionada == 0)
               _InformacoesPaciente(p: p)
             else if (_abaSelecionada == 1)
-              _Historico()
+              const _Historico()
             else
-              _Documentos(),
+              const _Documentos(),
 
             const SizedBox(height: 24),
 
@@ -237,24 +238,123 @@ class _InformacoesPaciente extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Historico extends StatelessWidget {
+  const _Historico();
+
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final historicos = state.historico;
+
     return _InfoCard(
       title: 'Histórico',
       children: [
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              'Nenhum histórico disponível.',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
+        if (historicos.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.history_outlined,
+                    size: 38,
+                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Nenhum histórico disponível.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
+          )
+        else
+          ...historicos.map(
+            (historico) => _HistoricoItem(
+              historico: historico,
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item do histórico
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HistoricoItem extends StatelessWidget {
+  final Historico historico;
+
+  const _HistoricoItem({
+    required this.historico,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final data = historico.data;
+
+    final dataFormatada =
+        '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year}';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.history,
+              color: AppTheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  historico.titulo,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  historico.descricao,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  dataFormatada,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -264,6 +364,8 @@ class _Historico extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Documentos extends StatelessWidget {
+  const _Documentos();
+
   @override
   Widget build(BuildContext context) {
     return _InfoCard(
@@ -272,12 +374,23 @@ class _Documentos extends StatelessWidget {
         Center(
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Text(
-              'Nenhum documento disponível.',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-              ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.description_outlined,
+                  size: 38,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Nenhum documento disponível.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -321,7 +434,7 @@ class _CardCuidador extends StatelessWidget {
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.10),
+            color: AppTheme.primary.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -361,7 +474,7 @@ class _InfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.textPrimary.withOpacity(0.06),
+            color: AppTheme.textPrimary.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -14,7 +14,10 @@ class Remedio {
   });
 
   // Firestore -> Flutter
-  factory Remedio.fromMap(String id, Map<String, dynamic> map) {
+  factory Remedio.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
     return Remedio(
       id: id,
       nome: map['nome'] ?? '',
@@ -110,7 +113,10 @@ class Mensagem {
     this.remetente,
   });
 
-  factory Mensagem.fromMap(String id, Map<String, dynamic> map) {
+  factory Mensagem.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
     return Mensagem(
       id: id,
       texto: map['texto'] ?? '',
@@ -169,7 +175,9 @@ class Paciente {
     required this.cuidadorCarga,
   });
 
-  factory Paciente.fromMap(Map<String, dynamic> map) {
+  factory Paciente.fromMap(
+    Map<String, dynamic> map,
+  ) {
     return Paciente(
       nome: map['nome'] ?? '',
       idade: map['idade'] ?? 0,
@@ -208,6 +216,56 @@ class Paciente {
       'cuidadorNome': cuidadorNome,
       'cuidadorTurno': cuidadorTurno,
       'cuidadorCarga': cuidadorCarga,
+    };
+  }
+}
+
+class Historico {
+  final String id;
+  final String tipo;
+  final String titulo;
+  final String descricao;
+  final DateTime data;
+
+  const Historico({
+    this.id = '',
+    required this.tipo,
+    required this.titulo,
+    required this.descricao,
+    required this.data,
+  });
+
+  // Firestore -> Flutter
+  factory Historico.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
+    DateTime data;
+
+    final valorData = map['data'];
+
+    if (valorData is String && valorData.isNotEmpty) {
+      data = DateTime.tryParse(valorData) ?? DateTime.now();
+    } else {
+      data = DateTime.now();
+    }
+
+    return Historico(
+      id: id,
+      tipo: map['tipo'] ?? '',
+      titulo: map['titulo'] ?? '',
+      descricao: map['descricao'] ?? '',
+      data: data,
+    );
+  }
+
+  // Flutter -> Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'tipo': tipo,
+      'titulo': titulo,
+      'descricao': descricao,
+      'data': data.toIso8601String(),
     };
   }
 }
