@@ -1,9 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Remedio {
   final String id;
   final String nome;
   final String tipo;
   final String horario;
   bool tomado;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
 
   Remedio({
     required this.id,
@@ -11,6 +15,8 @@ class Remedio {
     required this.tipo,
     required this.horario,
     this.tomado = false,
+    this.dataInicio,
+    this.dataFim,
   });
 
   // Firestore -> Flutter
@@ -18,12 +24,28 @@ class Remedio {
     String id,
     Map<String, dynamic> map,
   ) {
+    DateTime? converterData(dynamic valor) {
+      if (valor == null) return null;
+
+      if (valor is Timestamp) {
+        return valor.toDate();
+      }
+
+      if (valor is String && valor.isNotEmpty) {
+        return DateTime.tryParse(valor);
+      }
+
+      return null;
+    }
+
     return Remedio(
       id: id,
       nome: map['nome'] ?? '',
       tipo: map['tipo'] ?? '',
       horario: map['horario'] ?? '',
       tomado: map['tomado'] ?? false,
+      dataInicio: converterData(map['dataInicio']),
+      dataFim: converterData(map['dataFim']),
     );
   }
 
@@ -34,6 +56,8 @@ class Remedio {
       'tipo': tipo,
       'horario': horario,
       'tomado': tomado,
+      'dataInicio': dataInicio?.toIso8601String(),
+      'dataFim': dataFim?.toIso8601String(),
     };
   }
 }
@@ -64,7 +88,6 @@ class Compromisso {
     Map<String, dynamic> map,
   ) {
     DateTime? data;
-
     final valorData = map['data'];
 
     if (valorData is String && valorData.isNotEmpty) {
@@ -156,6 +179,13 @@ class Paciente {
   final String cuidadorTurno;
   final String cuidadorCarga;
 
+  // Documentos - opcionais
+  final String cpf;
+  final String rgCin;
+  final String orgaoExpedidor;
+  final String dataEmissaoDocumento;
+  final String cartaoSus;
+
   const Paciente({
     required this.nome,
     required this.idade,
@@ -173,6 +203,13 @@ class Paciente {
     required this.cuidadorNome,
     required this.cuidadorTurno,
     required this.cuidadorCarga,
+
+    // Documentos
+    this.cpf = '',
+    this.rgCin = '',
+    this.orgaoExpedidor = '',
+    this.dataEmissaoDocumento = '',
+    this.cartaoSus = '',
   });
 
   factory Paciente.fromMap(
@@ -195,6 +232,13 @@ class Paciente {
       cuidadorNome: map['cuidadorNome'] ?? '',
       cuidadorTurno: map['cuidadorTurno'] ?? '',
       cuidadorCarga: map['cuidadorCarga'] ?? '',
+
+      // Documentos
+      cpf: map['cpf'] ?? '',
+      rgCin: map['rgCin'] ?? '',
+      orgaoExpedidor: map['orgaoExpedidor'] ?? '',
+      dataEmissaoDocumento: map['dataEmissaoDocumento'] ?? '',
+      cartaoSus: map['cartaoSus'] ?? '',
     );
   }
 
@@ -216,6 +260,13 @@ class Paciente {
       'cuidadorNome': cuidadorNome,
       'cuidadorTurno': cuidadorTurno,
       'cuidadorCarga': cuidadorCarga,
+
+      // Documentos
+      'cpf': cpf,
+      'rgCin': rgCin,
+      'orgaoExpedidor': orgaoExpedidor,
+      'dataEmissaoDocumento': dataEmissaoDocumento,
+      'cartaoSus': cartaoSus,
     };
   }
 }
@@ -241,7 +292,6 @@ class Historico {
     Map<String, dynamic> map,
   ) {
     DateTime data;
-
     final valorData = map['data'];
 
     if (valorData is String && valorData.isNotEmpty) {

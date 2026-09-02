@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/models.dart';
 
 class AppState extends ChangeNotifier {
@@ -39,6 +38,11 @@ class AppState extends ChangeNotifier {
     cuidadorNome: '',
     cuidadorTurno: '',
     cuidadorCarga: '',
+    cpf: '',
+    rgCin: '',
+    orgaoExpedidor: '',
+    dataEmissaoDocumento: '',
+    cartaoSus: '',
   );
 
   Paciente get paciente => _paciente;
@@ -49,7 +53,8 @@ class AppState extends ChangeNotifier {
 
   List<Remedio> _remedios = [];
 
-  List<Remedio> get remedios => List.unmodifiable(_remedios);
+  List<Remedio> get remedios =>
+      List.unmodifiable(_remedios);
 
   // ============================================================
   // COMPROMISSOS
@@ -203,6 +208,11 @@ class AppState extends ChangeNotifier {
         cuidadorNome: '',
         cuidadorTurno: '',
         cuidadorCarga: '',
+        cpf: '',
+        rgCin: '',
+        orgaoExpedidor: '',
+        dataEmissaoDocumento: '',
+        cartaoSus: '',
       );
 
       _perfil = '';
@@ -312,36 +322,66 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addRemedio(
-    Remedio remedio,
-  ) async {
-    final user = _auth.currentUser;
+  Future<void> updateRemedio(
+  Remedio remedio,
+) async {
+  final user = _auth.currentUser;
 
-    if (user == null) {
-      return;
-    }
-
-    final docRef =
-        await _firestore
-            .collection('pacientes')
-            .doc(user.uid)
-            .collection('remedios')
-            .add(
-              remedio.toMap(),
-            );
-
-    final novoRemedio = Remedio(
-      id: docRef.id,
-      nome: remedio.nome,
-      tipo: remedio.tipo,
-      horario: remedio.horario,
-      tomado: remedio.tomado,
-    );
-
-    _remedios.add(novoRemedio);
-
-    notifyListeners();
+  if (user == null) {
+    throw Exception('Usuário não autenticado.');
   }
+
+  await _firestore
+      .collection('pacientes')
+      .doc(user.uid)
+      .collection('remedios')
+      .doc(remedio.id)
+      .set(
+        remedio.toMap(),
+      );
+
+  final index = _remedios.indexWhere(
+    (item) => item.id == remedio.id,
+  );
+
+  if (index != -1) {
+    _remedios[index] = remedio;
+  }
+
+  notifyListeners();
+}
+
+  Future<void> addRemedio(
+  Remedio remedio,
+) async {
+  final user = _auth.currentUser;
+
+  if (user == null) {
+    return;
+  }
+
+  final docRef = await _firestore
+      .collection('pacientes')
+      .doc(user.uid)
+      .collection('remedios')
+      .add(
+        remedio.toMap(),
+      );
+
+  final novoRemedio = Remedio(
+    id: docRef.id,
+    nome: remedio.nome,
+    tipo: remedio.tipo,
+    horario: remedio.horario,
+    tomado: remedio.tomado,
+    dataInicio: remedio.dataInicio,
+    dataFim: remedio.dataFim,
+  );
+
+  _remedios.add(novoRemedio);
+
+  notifyListeners();
+}
 
   Future<void> removeRemedio(
     String id,
@@ -770,6 +810,11 @@ class AppState extends ChangeNotifier {
       cuidadorNome: '',
       cuidadorTurno: '',
       cuidadorCarga: '',
+      cpf: '',
+      rgCin: '',
+      orgaoExpedidor: '',
+      dataEmissaoDocumento: '',
+      cartaoSus: '',
     );
 
     await _firestore
@@ -813,6 +858,14 @@ class AppState extends ChangeNotifier {
     required String cuidadorNome,
     required String cuidadorTurno,
     required String cuidadorCarga,
+
+    // Documentos são opcionais.
+    // Se não forem enviados, os valores atuais são preservados.
+    String? cpf,
+    String? rgCin,
+    String? orgaoExpedidor,
+    String? dataEmissaoDocumento,
+    String? cartaoSus,
   }) async {
     final user = _auth.currentUser;
 
@@ -859,6 +912,27 @@ class AppState extends ChangeNotifier {
     }
 
     // ----------------------------------------------------------
+    // PRESERVAR DOCUMENTOS EXISTENTES
+    // ----------------------------------------------------------
+
+    final cpfAtual =
+        cpf ?? _paciente.cpf;
+
+    final rgCinAtual =
+        rgCin ?? _paciente.rgCin;
+
+    final orgaoExpedidorAtual =
+        orgaoExpedidor ??
+            _paciente.orgaoExpedidor;
+
+    final dataEmissaoAtual =
+        dataEmissaoDocumento ??
+            _paciente.dataEmissaoDocumento;
+
+    final cartaoSusAtual =
+        cartaoSus ?? _paciente.cartaoSus;
+
+    // ----------------------------------------------------------
     // ATUALIZAR FIRESTORE
     // ----------------------------------------------------------
 
@@ -877,6 +951,14 @@ class AppState extends ChangeNotifier {
       'cuidadorNome': cuidadorNome,
       'cuidadorTurno': cuidadorTurno,
       'cuidadorCarga': cuidadorCarga,
+
+      // Documentos
+      'cpf': cpfAtual,
+      'rgCin': rgCinAtual,
+      'orgaoExpedidor': orgaoExpedidorAtual,
+      'dataEmissaoDocumento':
+          dataEmissaoAtual,
+      'cartaoSus': cartaoSusAtual,
     };
 
     await _firestore
@@ -908,6 +990,15 @@ class AppState extends ChangeNotifier {
       cuidadorNome: cuidadorNome,
       cuidadorTurno: cuidadorTurno,
       cuidadorCarga: cuidadorCarga,
+
+      // Documentos preservados
+      cpf: cpfAtual,
+      rgCin: rgCinAtual,
+      orgaoExpedidor:
+          orgaoExpedidorAtual,
+      dataEmissaoDocumento:
+          dataEmissaoAtual,
+      cartaoSus: cartaoSusAtual,
     );
 
     // ----------------------------------------------------------
@@ -919,6 +1010,110 @@ class AppState extends ChangeNotifier {
       titulo: 'Perfil atualizado',
       descricao:
           'Os dados do perfil foram atualizados.',
+    );
+
+    notifyListeners();
+  }
+
+  // ============================================================
+  // ATUALIZAR DOCUMENTOS
+  // ============================================================
+
+  Future<void> atualizarDocumentos({
+    required String cpf,
+    required String rgCin,
+    required String orgaoExpedidor,
+    required String dataEmissaoDocumento,
+    required String cartaoSus,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception(
+        'Usuário não autenticado.',
+      );
+    }
+
+    // ----------------------------------------------------------
+    // LIMPAR ESPAÇOS
+    // ----------------------------------------------------------
+
+    final cpfAtual = cpf.trim();
+    final rgCinAtual = rgCin.trim();
+    final orgaoAtual =
+        orgaoExpedidor.trim();
+    final dataEmissaoAtual =
+        dataEmissaoDocumento.trim();
+    final cartaoSusAtual =
+        cartaoSus.trim();
+
+    // ----------------------------------------------------------
+    // ATUALIZAR FIRESTORE
+    // ----------------------------------------------------------
+
+    await _firestore
+        .collection('pacientes')
+        .doc(user.uid)
+        .set(
+      {
+        'cpf': cpfAtual,
+        'rgCin': rgCinAtual,
+        'orgaoExpedidor': orgaoAtual,
+        'dataEmissaoDocumento':
+            dataEmissaoAtual,
+        'cartaoSus': cartaoSusAtual,
+      },
+      SetOptions(merge: true),
+    );
+
+    // ----------------------------------------------------------
+    // ATUALIZAR ESTADO LOCAL
+    // ----------------------------------------------------------
+
+    _paciente = Paciente(
+      nome: _paciente.nome,
+      idade: _paciente.idade,
+      id: _paciente.id,
+      dataNascimento:
+          _paciente.dataNascimento,
+      sexo: _paciente.sexo,
+      estadoCivil: _paciente.estadoCivil,
+      endereco: _paciente.endereco,
+      telefone: _paciente.telefone,
+      tipoSanguineo:
+          _paciente.tipoSanguineo,
+      condicaoSaude:
+          _paciente.condicaoSaude,
+      alergias: _paciente.alergias,
+      dispositivos:
+          _paciente.dispositivos,
+      observacoes:
+          _paciente.observacoes,
+      cuidadorNome:
+          _paciente.cuidadorNome,
+      cuidadorTurno:
+          _paciente.cuidadorTurno,
+      cuidadorCarga:
+          _paciente.cuidadorCarga,
+
+      // Documentos
+      cpf: cpfAtual,
+      rgCin: rgCinAtual,
+      orgaoExpedidor: orgaoAtual,
+      dataEmissaoDocumento:
+          dataEmissaoAtual,
+      cartaoSus: cartaoSusAtual,
+    );
+
+    // ----------------------------------------------------------
+    // REGISTRAR NO HISTÓRICO
+    // ----------------------------------------------------------
+
+    await _registrarHistorico(
+      tipo: 'documentos',
+      titulo: 'Documentos atualizados',
+      descricao:
+          'Os dados documentais foram atualizados.',
     );
 
     notifyListeners();
@@ -951,6 +1146,11 @@ class AppState extends ChangeNotifier {
       cuidadorNome: '',
       cuidadorTurno: '',
       cuidadorCarga: '',
+      cpf: '',
+      rgCin: '',
+      orgaoExpedidor: '',
+      dataEmissaoDocumento: '',
+      cartaoSus: '',
     );
 
     _remedios = [];
