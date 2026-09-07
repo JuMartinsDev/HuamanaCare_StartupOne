@@ -16,9 +16,9 @@ class GeminiService {
   //
   // Nunca coloque a chave diretamente neste arquivo.
   static const String _apiKey =
-      String.fromEnvironment('CHAVE API');
+      String.fromEnvironment('GEMINI_API_KEY');
 
-  static const String _model = 'gemini-2.5-flash-lite';
+  static const String _model = 'gemini-3.5-flash-lite';
 
   static const String _url =
       'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent';
@@ -102,15 +102,25 @@ $compromissoTexto
 ══ REGRAS DE COMPORTAMENTO ══
 
 - Responda sempre em português brasileiro.
+
 - Seja empático, paciente e use linguagem simples.
+
 - Use emojis com moderação para deixar a conversa mais amigável.
+
 - Nunca invente informações médicas ou prescreva medicamentos.
+
 - Se houver emergência, oriente a usar o botão SOS do app.
+
 - Respostas curtas e diretas (máximo 3 parágrafos).
+
 - Se perguntarem sobre remédios, consulte os dados fornecidos acima.
+
 - Se perguntarem sobre compromissos, consulte os dados fornecidos acima.
+
 - Não invente medicamentos ou compromissos que não estejam no contexto.
+
 - Assine as mensagens sempre como "Milo 🐘".
+
 ''';
   }
 
@@ -123,26 +133,37 @@ $compromissoTexto
     required List<Remedio> remedios,
     required List<Compromisso> compromissos,
   }) async {
+    // Verifica se a chave foi recebida pelo --dart-define.
     if (_apiKey.isEmpty) {
       throw Exception(
         'Chave de API do Gemini não configurada.\n\n'
-        'Execute o aplicativo usando --dart-define=GEMINI_API_KEY=...',
+        'Execute o aplicativo usando '
+        '--dart-define=GEMINI_API_KEY=...',
       );
     }
 
     final contents = <Map<String, dynamic>>[];
 
+    // Adiciona o histórico da conversa.
     for (final msg in historico) {
+      final role = msg['role'];
+      final text = msg['text'];
+
+      if (role == null || text == null || text.trim().isEmpty) {
+        continue;
+      }
+
       contents.add({
-        'role': msg['role'],
+        'role': role,
         'parts': [
           {
-            'text': msg['text'],
+            'text': text,
           },
         ],
       });
     }
 
+    // Adiciona a nova mensagem do usuário.
     contents.add({
       'role': 'user',
       'parts': [
@@ -172,52 +193,101 @@ $compromissoTexto
       },
     });
 
-    final response = await http
-        .post(
-          Uri.parse('$_url?key=$_apiKey'),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: body,
-        )
-        .timeout(
-          const Duration(seconds: 15),
+    try {
+      print('[GeminiService] Iniciando requisição...');
+      print('[GeminiService] Model: $_model');
+
+      final response = await http
+          .post(
+            Uri.parse('$_url?key=$_apiKey'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: body,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+          );
+
+      // Logs para depuração.
+      print(
+        '[GeminiService] Response status: ${response.statusCode}',
+      );
+      print(
+        '[GeminiService] Response body: ${response.body}',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final texto = _extractTextFromResponse(data);
+
+        print(
+          '[GeminiService] Extracted text: ${texto ?? "<null>"}',
         );
 
-    // Logs para depuração.
-    print('[GeminiService] Model: $_model');
-    print('[GeminiService] Response status: ${response.statusCode}');
-    print('[GeminiService] Response body: ${response.body}');
+        if (texto != null && texto.trim().isNotEmpty) {
+          _apiAvailable = true;
+          return texto.trim();
+        }
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      final texto = _extractTextFromResponse(data);
-
-      print(
-        '[GeminiService] Extracted text: ${texto ?? "<null>"}',
-      );
-
-      if (texto != null && texto.trim().isNotEmpty) {
-        return texto.trim();
+        throw Exception('Resposta vazia do Gemini.');
       }
 
-      throw Exception('Resposta vazia do Gemini');
-    }
+      if (response.statusCode == 401 ||
+          response.statusCode == 403) {
+        _apiAvailable = false;
 
-    if (response.statusCode == 401 ||
-        response.statusCode == 403) {
-      _apiAvailable = false;
+        throw Exception(
+          'Chave da API do Gemini inválida ou sem permissão. '
+          'Código: ${response.statusCode}',
+        );
+      }
+
+      if (response.statusCode == 400) {
+        throw Exception(
+          'Requisição inválida para o Gemini. '
+          'Verifique o formato da mensagem e do modelo. '
+          'Resposta: ${response.body}',
+        );
+      }
+
+      if (response.statusCode == 404) {
+        throw Exception(
+          'Modelo do Gemini não encontrado: $_model. '
+          'Código: ${response.statusCode}',
+        );
+      }
+
+      if (response.statusCode == 429) {
+        throw Exception(
+          'Limite de requisições da API do Gemini atingido. '
+          'Tente novamente em alguns instantes.',
+        );
+      }
 
       throw Exception(
-        'Chave da API do Gemini inválida ou sem permissão. '
-        'Código: ${response.statusCode}',
+        'Erro ${response.statusCode}: ${response.body}',
       );
-    }
+    } on http.ClientException catch (e) {
+      print('[GeminiService] Erro HTTP: $e');
 
-    throw Exception(
-      'Erro ${response.statusCode}: ${response.body}',
-    );
+      throw Exception(
+        'Não foi possível conectar ao Gemini. '
+        'Verifique sua conexão com a internet.',
+      );
+    } on FormatException catch (e) {
+      print('[GeminiService] Erro ao interpretar JSON: $e');
+
+      throw Exception(
+        'O Gemini retornou uma resposta inesperada.',
+      );
+    } catch (e, st) {
+      print('[GeminiService] Erro: $e');
+      print(st);
+
+      rethrow;
+    }
   }
 
   // ── Extrai o texto da resposta do Gemini ───────────────────────────
@@ -226,11 +296,16 @@ $compromissoTexto
     dynamic data,
   ) {
     try {
-      if (data == null) return null;
+      if (data == null) {
+        return null;
+      }
 
       final candidates = data['candidates'];
 
       if (candidates is! List || candidates.isEmpty) {
+        print(
+          '[GeminiService] Nenhum candidate encontrado.',
+        );
         return null;
       }
 
@@ -256,7 +331,9 @@ $compromissoTexto
 
       for (final part in parts) {
         if (part is Map && part['text'] != null) {
-          textos.add(part['text'].toString());
+          textos.add(
+            part['text'].toString(),
+          );
         }
       }
 

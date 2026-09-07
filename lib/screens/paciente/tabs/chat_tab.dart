@@ -30,34 +30,34 @@ class _ChatTabState extends State<ChatTab> {
   String _horaAgora() {
     final t = TimeOfDay.now();
 
-    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    return '${t.hour.toString().padLeft(2, '0')}:'
+        '${t.minute.toString().padLeft(2, '0')}';
   }
 
-  void _enviar() {
+  Future<void> _enviar() async {
     final txt = _input.text.trim();
 
     if (txt.isEmpty) return;
 
     final state = context.read<AppState>();
 
-    state.addMensagem(
-      _canal,
-      Mensagem(
-        id: 'u${DateTime.now().millisecondsSinceEpoch}',
-        texto: txt,
-        recebido: false,
-        hora: _horaAgora(),
-      ),
-    );
+    try {
+      await state.addMensagem(
+        _canal,
+        Mensagem(
+          id: 'u${DateTime.now().millisecondsSinceEpoch}',
+          texto: txt,
+          recebido: false,
+          hora: _horaAgora(),
+        ),
+      );
 
-    _input.clear();
+      _input.clear();
+      _rolarParaFim();
 
-    _rolarParaFim();
+      // Resposta automática apenas no canal "milo".
+      if (_canal != 'milo') return;
 
-    // Resposta automática apenas no canal "milo".
-    if (_canal != 'milo') return;
-
-    () async {
       try {
         // Dados reais carregados pelo AppState a partir do Firestore.
         final paciente = state.paciente;
@@ -86,7 +86,7 @@ class _ChatTabState extends State<ChatTab> {
 
         if (!mounted) return;
 
-        state.addMensagem(
+        await state.addMensagem(
           _canal,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
@@ -100,7 +100,7 @@ class _ChatTabState extends State<ChatTab> {
       } catch (_) {
         if (!mounted) return;
 
-        state.addMensagem(
+        await state.addMensagem(
           _canal,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
@@ -115,7 +115,17 @@ class _ChatTabState extends State<ChatTab> {
       } finally {
         _rolarParaFim();
       }
-    }();
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível enviar a mensagem.',
+          ),
+        ),
+      );
+    }
   }
 
   void _rolarParaFim() {
@@ -138,6 +148,7 @@ class _ChatTabState extends State<ChatTab> {
       child: Column(
         children: [
           const SizedBox(height: 14),
+
           Text(
             'Chat',
             style: GoogleFonts.poppins(
@@ -146,20 +157,28 @@ class _ChatTabState extends State<ChatTab> {
               color: AppTheme.textPrimary,
             ),
           ),
+
           const SizedBox(height: 14),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
                 _canalChip('Família', 'familia'),
+
                 const SizedBox(width: 8),
+
                 _canalChip('Cuidador', 'cuidador'),
+
                 const SizedBox(width: 8),
+
                 _canalChip('Milo', 'milo'),
               ],
             ),
           ),
+
           const SizedBox(height: 12),
+
           Expanded(
             child: msgs.isEmpty
                 ? Center(
@@ -173,18 +192,29 @@ class _ChatTabState extends State<ChatTab> {
                   )
                 : ListView.builder(
                     controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      8,
+                      20,
+                      16,
+                    ),
                     itemCount: msgs.length,
-                    itemBuilder: (_, i) => _Bubble(m: msgs[i]),
+                    itemBuilder: (_, i) => _Bubble(
+                      m: msgs[i],
+                    ),
                   ),
           ),
+
           _barra(),
         ],
       ),
     );
   }
 
-  Widget _canalChip(String label, String id) {
+  Widget _canalChip(
+    String label,
+    String id,
+  ) {
     final on = _canal == id;
 
     return Expanded(
@@ -194,13 +224,19 @@ class _ChatTabState extends State<ChatTab> {
           _rolarParaFim();
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9),
+          padding: const EdgeInsets.symmetric(
+            vertical: 9,
+          ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: on ? const Color(0xFFFDF6E3) : AppTheme.surface,
+            color: on
+                ? const Color(0xFFFDF6E3)
+                : AppTheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: on ? const Color(0xFFEFE2B6) : AppTheme.divider,
+              color: on
+                  ? const Color(0xFFEFE2B6)
+                  : AppTheme.divider,
             ),
           ),
           child: Text(
@@ -208,7 +244,9 @@ class _ChatTabState extends State<ChatTab> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: on ? AppTheme.accent : AppTheme.textLight,
+              color: on
+                  ? AppTheme.accent
+                  : AppTheme.textLight,
             ),
           ),
         ),
@@ -218,18 +256,27 @@ class _ChatTabState extends State<ChatTab> {
 
   Widget _barra() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        12,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         border: Border(
-          top: BorderSide(color: AppTheme.divider),
+          top: BorderSide(
+            color: AppTheme.divider,
+          ),
         ),
       ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+              ),
               decoration: BoxDecoration(
                 color: AppTheme.background,
                 borderRadius: BorderRadius.circular(24),
@@ -237,7 +284,9 @@ class _ChatTabState extends State<ChatTab> {
               child: TextField(
                 controller: _input,
                 onSubmitted: (_) => _enviar(),
-                style: GoogleFonts.poppins(fontSize: 14),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                ),
                 decoration: InputDecoration(
                   hintText: _canal == 'milo'
                       ? 'Pergunte ao Milo…'
@@ -251,7 +300,9 @@ class _ChatTabState extends State<ChatTab> {
               ),
             ),
           ),
+
           const SizedBox(width: 8),
+
           GestureDetector(
             onTap: _enviar,
             child: Container(
@@ -277,38 +328,55 @@ class _ChatTabState extends State<ChatTab> {
 class _Bubble extends StatelessWidget {
   final Mensagem m;
 
-  const _Bubble({required this.m});
+  const _Bubble({
+    required this.m,
+  });
 
   @override
   Widget build(BuildContext context) {
     final eu = !m.recebido;
 
     return Align(
-      alignment: eu ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: eu
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(
+          bottom: 10,
+        ),
         padding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 10,
         ),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.72,
+          maxWidth:
+              MediaQuery.of(context).size.width * 0.72,
         ),
         decoration: BoxDecoration(
-          color: eu ? AppTheme.primary : const Color(0xFFE0F4F1),
+          color: eu
+              ? AppTheme.primary
+              : const Color(0xFFE0F4F1),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(eu ? 16 : 4),
-            bottomRight: Radius.circular(eu ? 4 : 16),
+            bottomLeft: Radius.circular(
+              eu ? 16 : 4,
+            ),
+            bottomRight: Radius.circular(
+              eu ? 4 : 16,
+            ),
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
-            if (m.recebido && m.remetente != null)
+            if (m.recebido &&
+                m.remetente != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(
+                  bottom: 2,
+                ),
                 child: Text(
                   m.remetente!,
                   style: GoogleFonts.poppins(
@@ -320,12 +388,15 @@ class _Bubble extends StatelessWidget {
                   ),
                 ),
               ),
+
             Text(
               m.texto,
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 height: 1.3,
-                color: eu ? Colors.white : AppTheme.textPrimary,
+                color: eu
+                    ? Colors.white
+                    : AppTheme.textPrimary,
               ),
             ),
           ],
