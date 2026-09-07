@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
+
 import '../../../models/app_state.dart';
+
 import '../../../models/models.dart';
+
 import '../paciente_home.dart';
+
 import '../alertas_screen.dart';
+
 import '../criar_compromisso_screen.dart';
 
 class InicioTab extends StatelessWidget {
@@ -30,7 +37,9 @@ class InicioTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+
     final p = state.paciente;
+
     final agora = DateTime.now();
 
     final pendentes =
@@ -69,6 +78,7 @@ class InicioTab extends StatelessWidget {
             // =========================
             // CABEÇALHO
             // =========================
+
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -125,6 +135,7 @@ class InicioTab extends StatelessWidget {
                 // =========================
                 // CARD DO PACIENTE
                 // =========================
+
                 Positioned(
                   left: 20,
                   right: 20,
@@ -222,6 +233,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // RESUMO DO DIA
                   // =========================
+
                   Row(
                     mainAxisAlignment:
                         MainAxisAlignment.spaceBetween,
@@ -256,6 +268,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // MEDICAMENTOS
                   // =========================
+
                   _ResumoRow(
                     icone:
                         Icons.medication_outlined,
@@ -278,6 +291,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // ALERTAS
                   // =========================
+
                   _ResumoRow(
                     icone:
                         Icons.notifications_none_rounded,
@@ -301,6 +315,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // PRÓXIMO COMPROMISSO
                   // =========================
+
                   Text(
                     'Próximo compromisso',
                     style:
@@ -318,6 +333,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // CALENDÁRIO
                   // =========================
+
                   _MiniCalendar(
                     mes: agora.month,
                     ano: agora.year,
@@ -331,9 +347,27 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // PRÓXIMO COMPROMISSO
                   // =========================
+
                   if (proximoCompromisso != null)
                     _CompromissoCard(
                       c: proximoCompromisso,
+                      onEditar: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                CriarCompromissoScreen(
+                              compromisso:
+                                  proximoCompromisso,
+                            ),
+                          ),
+                        );
+                      },
+                      onExcluir: () {
+                        _confirmarExclusao(
+                          context,
+                          proximoCompromisso,
+                        );
+                      },
                     )
                   else
                     Container(
@@ -377,9 +411,8 @@ class InicioTab extends StatelessWidget {
                             style:
                                 GoogleFonts.poppins(
                               fontSize: 11,
-                              color:
-                                  AppTheme
-                                      .textSecondary,
+                              color: AppTheme
+                                  .textSecondary,
                             ),
                           ),
                         ],
@@ -391,6 +424,7 @@ class InicioTab extends StatelessWidget {
                   // =========================
                   // BOTÃO NOVO COMPROMISSO
                   // =========================
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -447,8 +481,77 @@ class InicioTab extends StatelessWidget {
   }
 
   // =========================
+  // CONFIRMAR EXCLUSÃO
+  // =========================
+
+  Future<void> _confirmarExclusao(
+    BuildContext context,
+    Compromisso compromisso,
+  ) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text(
+            'Excluir compromisso?',
+          ),
+          content: Text(
+            'Deseja realmente excluir '
+            '"${compromisso.titulo}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext)
+                    .pop(false);
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext)
+                    .pop(true);
+              },
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      await context
+          .read<AppState>()
+          .removeCompromisso(compromisso.id);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Compromisso excluído com sucesso.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível excluir o compromisso.',
+          ),
+        ),
+      );
+    }
+  }
+
+  // =========================
   // ENCONTRAR PRÓXIMO COMPROMISSO
   // =========================
+
   static Compromisso? _encontrarProximoCompromisso(
     List<Compromisso> compromissos,
     DateTime agora,
@@ -473,6 +576,7 @@ class InicioTab extends StatelessWidget {
   // =========================
   // AVATAR
   // =========================
+
   static Widget _avatar(double s) {
     return Container(
       width: s,
@@ -583,9 +687,13 @@ class _ResumoRow extends StatelessWidget {
 class _CompromissoCard
     extends StatelessWidget {
   final Compromisso c;
+  final VoidCallback onEditar;
+  final VoidCallback onExcluir;
 
   const _CompromissoCard({
     required this.c,
+    required this.onEditar,
+    required this.onExcluir,
   });
 
   @override
@@ -697,6 +805,52 @@ class _CompromissoCard
                   AppTheme.primary,
             ),
           ),
+
+          // ÚNICA ADIÇÃO VISUAL:
+          // menu de opções do compromisso.
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              Icons.more_vert,
+              size: 20,
+              color: AppTheme.textLight,
+            ),
+            onSelected: (opcao) {
+              if (opcao == 'editar') {
+                onEditar();
+              } else if (opcao == 'excluir') {
+                onExcluir();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'editar',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 19,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Editar'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'excluir',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 19,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Excluir'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -763,8 +917,7 @@ class _MiniCalendar
       'Su',
     ];
 
-    final flat =
-        <Map<String, int>>[];
+    final flat = <Map<String, int>>[];
 
     for (
       int i = 0;

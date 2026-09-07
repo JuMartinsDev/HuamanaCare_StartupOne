@@ -7,7 +7,12 @@ import '../../models/app_state.dart';
 import '../../models/models.dart';
 
 class CriarCompromissoScreen extends StatefulWidget {
-  const CriarCompromissoScreen({super.key});
+  final Compromisso? compromisso;
+
+  const CriarCompromissoScreen({
+    super.key,
+    this.compromisso,
+  });
 
   @override
   State<CriarCompromissoScreen> createState() =>
@@ -24,6 +29,37 @@ class _CriarCompromissoScreenState
   bool _salvando = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    final compromisso = widget.compromisso;
+
+    if (compromisso != null) {
+      _tituloController.text = compromisso.titulo;
+      _localController.text = compromisso.local;
+      _data = compromisso.data;
+
+      if (compromisso.horario.isNotEmpty) {
+        final partes = compromisso.horario.split(':');
+
+        if (partes.length == 2) {
+          final hora = int.tryParse(partes[0]);
+          final minuto = int.tryParse(partes[1]);
+
+          if (hora != null && minuto != null) {
+            _horario = TimeOfDay(
+              hour: hora,
+              minute: minuto,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  bool get _editando => widget.compromisso != null;
+
+  @override
   void dispose() {
     _tituloController.dispose();
     _localController.dispose();
@@ -33,10 +69,16 @@ class _CriarCompromissoScreenState
   Future<void> _selecionarData() async {
     final agora = DateTime.now();
 
+    final primeiraData = _editando && _data != null
+        ? _data!
+        : agora;
+
     final data = await showDatePicker(
       context: context,
-      initialDate: _data ?? agora,
-      firstDate: agora,
+      initialDate: primeiraData,
+      firstDate: _editando && _data != null
+          ? _data!
+          : agora,
       lastDate: DateTime(agora.year + 5),
       locale: const Locale('pt', 'BR'),
     );
@@ -109,7 +151,9 @@ class _CriarCompromissoScreenState
     final titulo = _tituloController.text.trim();
     final local = _localController.text.trim();
 
-    if (titulo.isEmpty || _data == null || _horario == null) {
+    if (titulo.isEmpty ||
+        _data == null ||
+        _horario == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -134,18 +178,25 @@ class _CriarCompromissoScreenState
       );
 
       final compromisso = Compromisso(
+        id: widget.compromisso?.id ?? '',
         titulo: titulo,
         horario: _formatarHorario(_horario!),
-        local: local.isEmpty ? 'Local não informado' : local,
+        local: local.isEmpty
+            ? 'Local não informado'
+            : local,
         dia: _data!.day,
         mesAbrev: _mesAbreviado(_data!.month),
         diaAbrev: _diaAbreviado(_data!),
         data: dataCompleta,
       );
 
-      await context.read<AppState>().addCompromisso(
-        compromisso,
-      );
+      final state = context.read<AppState>();
+
+      if (_editando) {
+        await state.updateCompromisso(compromisso);
+      } else {
+        await state.addCompromisso(compromisso);
+      }
 
       if (!mounted) return;
 
@@ -156,7 +207,9 @@ class _CriarCompromissoScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Não foi possível criar o compromisso.',
+            _editando
+                ? 'Não foi possível atualizar o compromisso.'
+                : 'Não foi possível criar o compromisso.',
           ),
         ),
       );
@@ -182,7 +235,9 @@ class _CriarCompromissoScreenState
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Novo compromisso',
+          _editando
+              ? 'Editar compromisso'
+              : 'Novo compromisso',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -210,9 +265,7 @@ class _CriarCompromissoScreenState
                 hint: 'Ex.: Consulta médica',
                 icon: Icons.event_note_outlined,
               ),
-
               const SizedBox(height: 20),
-
               Text(
                 'Data',
                 style: GoogleFonts.poppins(
@@ -229,9 +282,7 @@ class _CriarCompromissoScreenState
                 icon: Icons.calendar_today_outlined,
                 onTap: _selecionarData,
               ),
-
               const SizedBox(height: 20),
-
               Text(
                 'Horário',
                 style: GoogleFonts.poppins(
@@ -248,9 +299,7 @@ class _CriarCompromissoScreenState
                 icon: Icons.access_time_outlined,
                 onTap: _selecionarHorario,
               ),
-
               const SizedBox(height: 20),
-
               Text(
                 'Local',
                 style: GoogleFonts.poppins(
@@ -265,9 +314,7 @@ class _CriarCompromissoScreenState
                 hint: 'Ex.: Hospital ou clínica',
                 icon: Icons.location_on_outlined,
               ),
-
               const SizedBox(height: 36),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -291,7 +338,9 @@ class _CriarCompromissoScreenState
                           ),
                         )
                       : Text(
-                          'Adicionar compromisso',
+                          _editando
+                              ? 'Salvar alterações'
+                              : 'Adicionar compromisso',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
