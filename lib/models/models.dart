@@ -88,6 +88,7 @@ class Compromisso {
     Map<String, dynamic> map,
   ) {
     DateTime? data;
+
     final valorData = map['data'];
 
     if (valorData is String && valorData.isNotEmpty) {
@@ -122,10 +123,21 @@ class Compromisso {
 class Mensagem {
   final String id;
   final String texto;
+
+  // Define visualmente se a mensagem é recebida
+  // pelo usuário que está visualizando o chat.
   final bool recebido;
+
   final String hora;
   final bool isMilo;
+
+  // Nome exibido do remetente.
   final String? remetente;
+
+  // UID do usuário que enviou a mensagem.
+  // Usado para determinar corretamente quem enviou
+  // e quem recebeu a mensagem.
+  final String? remetenteUid;
 
   Mensagem({
     required this.id,
@@ -134,8 +146,10 @@ class Mensagem {
     required this.hora,
     this.isMilo = false,
     this.remetente,
+    this.remetenteUid,
   });
 
+  // Firestore -> Flutter
   factory Mensagem.fromMap(
     String id,
     Map<String, dynamic> map,
@@ -147,9 +161,11 @@ class Mensagem {
       hora: map['hora'] ?? '',
       isMilo: map['isMilo'] ?? false,
       remetente: map['remetente'],
+      remetenteUid: map['remetenteUid'],
     );
   }
 
+  // Flutter -> Firestore
   Map<String, dynamic> toMap() {
     return {
       'texto': texto,
@@ -157,6 +173,7 @@ class Mensagem {
       'hora': hora,
       'isMilo': isMilo,
       'remetente': remetente,
+      'remetenteUid': remetenteUid,
     };
   }
 }
@@ -292,6 +309,7 @@ class Historico {
     Map<String, dynamic> map,
   ) {
     DateTime data;
+
     final valorData = map['data'];
 
     if (valorData is String && valorData.isNotEmpty) {
@@ -319,3 +337,4 @@ class Historico {
     };
   }
 }
+

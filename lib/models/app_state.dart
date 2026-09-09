@@ -14,6 +14,12 @@ class AppState extends ChangeNotifier {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _pacienteListener;
 
+  // Listeners dos canais de mensagens.
+  final Map<
+      String,
+      StreamSubscription<QuerySnapshot<Map<String, dynamic>>>> _mensagemListeners =
+      {};
+
   // ============================================================
   // AUTH / PERFIL
   // ============================================================
@@ -27,12 +33,10 @@ class AppState extends ChangeNotifier {
   String? _pacienteVinculadoId;
   String? _codigoVinculo;
   String? _nomeConta;
-
   String? _cuidadorUid;
   String? _cuidadorNome;
 
   String? get pacienteVinculadoId => _pacienteVinculadoId;
-
   String? get codigoVinculo => _codigoVinculo;
 
   String? get usuarioAtualId => _auth.currentUser?.uid;
@@ -306,7 +310,6 @@ class AppState extends ChangeNotifier {
 
       await _carregarMensagensFirestore();
 
-      // IMPORTANTE:
       // Mantém o paciente sincronizado em tempo real.
       _iniciarListenerPaciente(user.uid);
     }
@@ -391,7 +394,7 @@ class AppState extends ChangeNotifier {
           );
 
           // ======================================================
-          // AQUI ESTÁ A CORREÇÃO DO CUIDADOR
+          // DADOS DO CUIDADOR
           // ======================================================
 
           _cuidadorUid =
@@ -400,7 +403,6 @@ class AppState extends ChangeNotifier {
           _cuidadorNome =
               dados['cuidadorNome']?.toString();
 
-          // Se não existir cuidador, limpa o estado.
           if (_cuidadorUid == null ||
               _cuidadorUid!.isEmpty) {
             _cuidadorUid = null;
@@ -633,8 +635,7 @@ class AppState extends ChangeNotifier {
       (_) => caracteres[
           random.nextInt(
             caracteres.length,
-          )
-        ],
+          )],
     ).join();
 
     return 'HC-$codigo';
@@ -754,7 +755,8 @@ class AppState extends ChangeNotifier {
           (_nomeConta != null &&
                   _nomeConta!.trim().isNotEmpty)
               ? _nomeConta!.trim()
-              : (user.displayName ?? '').trim();
+              : (user.displayName ?? '')
+                  .trim();
 
       // Salva o cuidador no documento do paciente.
       await _firestore
@@ -1375,10 +1377,121 @@ class AppState extends ChangeNotifier {
   // MENSAGENS
   // ============================================================
 
-  Future<void>
-      _carregarMensagensFirestore() async {
+  String _caminhoCanal(
+    String pacienteId,
+    String canal,
+  ) {
+    return 'pacientes/$pacienteId/canais/$canal/mensagens';
+  }
+
+  // Cria uma Mensagem pronta para o usuário atual.
+  //
+  // Para paciente/cuidador/familiar:
+  // - remetenteUid = UID do usuário atual;
+  // - recebido = false, pois acabou de ser enviada pelo usuário atual.
+  //
+  // Para Milo:
+  // - mantém remetenteUid nulo;
+  // - mantém o valor recebido informado pela interface.
+  Mensagem _prepararMensagemParaEnvio(
+    Mensagem mensagem,
+  ) {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception(
+        'Usuário não autenticado.',
+      );
+    }
+
+    if (mensagem.isMilo) {
+      return mensagem;
+    }
+
+    final remetenteUid =
+        mensagem.remetenteUid ??
+            user.uid;
+
+    final remetente =
+        mensagem.remetente ??
+            usuarioAtualNome;
+
+    return Mensagem(
+      id: mensagem.id,
+      texto: mensagem.texto,
+      recebido: false,
+      hora: mensagem.hora,
+      isMilo: false,
+      remetente:
+          remetente.isEmpty
+              ? null
+              : remetente,
+      remetenteUid:
+          remetenteUid,
+    );
+  }
+
+  // Converte a mensagem armazenada no Firestore
+  // para o contexto do usuário atual.
+  //
+  // A mesma mensagem é compartilhada pelos dois usuários.
+  // Portanto, "recebido" precisa ser calculado de acordo
+  // com quem está visualizando a conversa.
+  Mensagem _mensagemParaUsuarioAtual(
+    String canal,
+    Mensagem mensagem,
+  ) {
+    final userUid =
+        _auth.currentUser?.uid;
+
+    // Milo continua sendo recebido pelo paciente.
+    if (mensagem.isMilo) {
+      return Mensagem(
+        id: mensagem.id,
+        texto: mensagem.texto,
+        recebido: mensagem.recebido,
+        hora: mensagem.hora,
+        isMilo: true,
+        remetente:
+            mensagem.remetente ?? 'Milo',
+        remetenteUid:
+            mensagem.remetenteUid,
+      );
+    }
+
+    // Mensagens antigas que ainda não possuem remetenteUid.
+    // Mantemos o comportamento antigo para não quebrar
+    // dados já existentes no Firestore.
+    if (mensagem.remetenteUid == null ||
+        mensagem.remetenteUid!.isEmpty ||
+        userUid == null) {
+      return mensagem;
+    }
+
+    final euEnviei =
+        mensagem.remetenteUid ==
+            userUid;
+
+    return Mensagem(
+      id: mensagem.id,
+      texto: mensagem.texto,
+      recebido: !euEnviei,
+      hora: mensagem.hora,
+      isMilo: mensagem.isMilo,
+      remetente:
+          mensagem.remetente,
+      remetenteUid:
+          mensagem.remetenteUid,
+    );
+  }
+
+  // Carrega as mensagens inicialmente e
+  // inicia listeners em tempo real.
+  Future<void> _carregarMensagensFirestore() async {
     final pacienteId =
         pacienteIdDados;
+
+    await _cancelarListenersMensagens();
 
     if (pacienteId == null ||
         pacienteId.isEmpty) {
@@ -1404,14 +1517,93 @@ class AppState extends ChangeNotifier {
               .collection('mensagens')
               .get();
 
-      _msgs[canal] = snapshot.docs
-          .map(
-            (doc) => Mensagem.fromMap(
-              doc.id,
-              doc.data(),
-            ),
-          )
-          .toList();
+      final mensagensCarregadas =
+          snapshot.docs
+              .map(
+                (doc) {
+                  final mensagem =
+                      Mensagem.fromMap(
+                    doc.id,
+                    doc.data(),
+                  );
+
+                  return _mensagemParaUsuarioAtual(
+                    canal,
+                    mensagem,
+                  );
+                },
+              )
+              .toList();
+
+      _msgs[canal] =
+          mensagensCarregadas;
+
+      _iniciarListenerMensagens(
+        pacienteId,
+        canal,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  // Listener em tempo real de um canal.
+  void _iniciarListenerMensagens(
+    String pacienteId,
+    String canal,
+  ) {
+    _mensagemListeners[canal]?.cancel();
+
+    final mensagensRef =
+        _firestore
+            .collection('pacientes')
+            .doc(pacienteId)
+            .collection('canais')
+            .doc(canal)
+            .collection('mensagens');
+
+    _mensagemListeners[canal] =
+        mensagensRef.snapshots().listen(
+      (snapshot) {
+        final mensagens =
+            snapshot.docs
+                .map(
+                  (doc) {
+                    final mensagem =
+                        Mensagem.fromMap(
+                      doc.id,
+                      doc.data(),
+                    );
+
+                    return _mensagemParaUsuarioAtual(
+                      canal,
+                      mensagem,
+                    );
+                  },
+                )
+                .toList();
+
+        _msgs[canal] =
+            mensagens;
+
+        notifyListeners();
+      },
+      onError: (Object error) {
+        debugPrint(
+          'Erro no listener do canal $canal: $error',
+        );
+      },
+    );
+  }
+
+  Future<void> _cancelarListenersMensagens() async {
+    final listeners =
+        _mensagemListeners.values.toList();
+
+    _mensagemListeners.clear();
+
+    for (final listener in listeners) {
+      await listener.cancel();
     }
   }
 
@@ -1434,13 +1626,16 @@ class AppState extends ChangeNotifier {
       'milo',
     ];
 
-    if (!canaisValidos.contains(
-      canal,
-    )) {
+    if (!canaisValidos.contains(canal)) {
       throw Exception(
         'Canal de mensagem inválido.',
       );
     }
+
+    final mensagemParaSalvar =
+        _prepararMensagemParaEnvio(
+      mensagem,
+    );
 
     final colecao =
         _firestore
@@ -1451,22 +1646,37 @@ class AppState extends ChangeNotifier {
             .collection('mensagens');
 
     final docRef =
-        mensagem.id.isEmpty
+        mensagemParaSalvar.id.isEmpty
             ? colecao.doc()
-            : colecao.doc(mensagem.id);
+            : colecao.doc(
+                mensagemParaSalvar.id,
+              );
 
     await docRef.set(
-      mensagem.toMap(),
+      mensagemParaSalvar.toMap(),
     );
 
-    final mensagemSalva =
-        Mensagem(
-      id: docRef.id,
-      texto: mensagem.texto,
-      recebido: mensagem.recebido,
-      hora: mensagem.hora,
-      isMilo: mensagem.isMilo,
-      remetente: mensagem.remetente,
+    // Atualiza imediatamente o estado local.
+    //
+    // O listener também receberá essa alteração.
+    // A substituição abaixo evita que a mensagem
+    // apareça somente depois do retorno do listener.
+    final mensagemLocal =
+        _mensagemParaUsuarioAtual(
+      canal,
+      Mensagem(
+        id: docRef.id,
+        texto: mensagemParaSalvar.texto,
+        recebido:
+            mensagemParaSalvar.recebido,
+        hora: mensagemParaSalvar.hora,
+        isMilo:
+            mensagemParaSalvar.isMilo,
+        remetente:
+            mensagemParaSalvar.remetente,
+        remetenteUid:
+            mensagemParaSalvar.remetenteUid,
+      ),
     );
 
     _msgs.putIfAbsent(
@@ -1474,9 +1684,23 @@ class AppState extends ChangeNotifier {
       () => [],
     );
 
-    _msgs[canal]!.add(
-      mensagemSalva,
+    final mensagensAtuais =
+        _msgs[canal]!;
+
+    final indiceExistente =
+        mensagensAtuais.indexWhere(
+      (item) => item.id == docRef.id,
     );
+
+    if (indiceExistente == -1) {
+      mensagensAtuais.add(
+        mensagemLocal,
+      );
+    } else {
+      mensagensAtuais[
+              indiceExistente] =
+          mensagemLocal;
+    }
 
     notifyListeners();
   }
@@ -1487,13 +1711,11 @@ class AppState extends ChangeNotifier {
 
   Future<void> acionarSos() async {
     _sosAtivado = true;
-
     notifyListeners();
   }
 
   Future<void> desativarSos() async {
     _sosAtivado = false;
-
     notifyListeners();
   }
 
@@ -1537,7 +1759,8 @@ class AppState extends ChangeNotifier {
 
     final dados =
         <String, dynamic>{
-      'perfil': perfilSelecionado,
+      'perfil':
+          perfilSelecionado,
     };
 
     // ==========================================================
@@ -1679,7 +1902,6 @@ class AppState extends ChangeNotifier {
     }
 
     _logado = true;
-
     _nomeConta = nome;
 
     await _firestore
@@ -1868,7 +2090,8 @@ class AppState extends ChangeNotifier {
 
     if (tipoSanguineo != null &&
         tipoSanguineo !=
-            pacienteAnterior.tipoSanguineo) {
+            pacienteAnterior
+                .tipoSanguineo) {
       alteracoes.add(
         'tipo sanguíneo',
       );
@@ -2098,9 +2321,8 @@ class AppState extends ChangeNotifier {
           dataEmissaoDocumento ??
               pacienteAnterior
                   .dataEmissaoDocumento,
-      cartaoSus:
-          cartaoSus ??
-              pacienteAnterior.cartaoSus,
+      cartaoSus: cartaoSus ??
+          pacienteAnterior.cartaoSus,
     );
 
     if (alteracoes.isNotEmpty) {
@@ -2166,6 +2388,8 @@ class AppState extends ChangeNotifier {
     _pacienteListener?.cancel();
     _pacienteListener = null;
 
+    _cancelarListenersMensagens();
+
     _logado = false;
     _perfil = '';
 
@@ -2189,8 +2413,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> logout() async {
     await _pacienteListener?.cancel();
-
     _pacienteListener = null;
+
+    await _cancelarListenersMensagens();
 
     await _auth.signOut();
 
@@ -2238,3 +2463,4 @@ class AppState extends ChangeNotifier {
     }
   }
 }
+

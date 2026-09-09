@@ -1753,8 +1753,90 @@ class _DataSelecionavel extends StatelessWidget {
 // CHAT
 // ============================================================
 
-class _CuidadorChatTab extends StatelessWidget {
+class _CuidadorChatTab extends StatefulWidget {
   const _CuidadorChatTab();
+
+  @override
+  State<_CuidadorChatTab> createState() => _CuidadorChatTabState();
+}
+
+class _CuidadorChatTabState extends State<_CuidadorChatTab> {
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+
+  bool _enviando = false;
+
+  @override
+  void dispose() {
+    _input.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  String _horaAgora() {
+    final t = TimeOfDay.now();
+
+    return '${t.hour.toString().padLeft(2, '0')}:'
+        '${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _enviar() async {
+    final texto = _input.text.trim();
+
+    if (texto.isEmpty || _enviando) {
+      return;
+    }
+
+    final state = context.read<AppState>();
+
+    setState(() {
+      _enviando = true;
+    });
+
+    try {
+      await state.addMensagem(
+        'cuidador',
+        Mensagem(
+          id: 'u${DateTime.now().millisecondsSinceEpoch}',
+          texto: texto,
+          recebido: false,
+          hora: _horaAgora(),
+        ),
+      );
+
+      _input.clear();
+
+      _rolarParaFim();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível enviar a mensagem: $e',
+          ),
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _enviando = false;
+      });
+    }
+  }
+
+  void _rolarParaFim() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1841,15 +1923,19 @@ class _CuidadorChatTab extends StatelessWidget {
               child: mensagens.isEmpty
                   ? const _EmptyChat()
                   : ListView.builder(
+                      controller: _scroll,
                       padding: const EdgeInsets.all(20),
                       itemCount: mensagens.length,
                       itemBuilder: (context, index) {
                         final mensagem = mensagens[index];
 
+                        final minhaMensagem =
+                            !mensagem.recebido;
+
                         return Align(
-                          alignment: mensagem.recebido
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
+                          alignment: minhaMensagem
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
                           child: Container(
                             constraints:
                                 const BoxConstraints(
@@ -1865,12 +1951,12 @@ class _CuidadorChatTab extends StatelessWidget {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: mensagem.recebido
-                                  ? AppTheme.surface
-                                  : AppTheme.primary,
+                              color: minhaMensagem
+                                  ? AppTheme.primary
+                                  : AppTheme.surface,
                               borderRadius:
                                   BorderRadius.circular(16),
-                              border: mensagem.recebido
+                              border: !minhaMensagem
                                   ? Border.all(
                                       color:
                                           Colors.grey.shade300,
@@ -1881,23 +1967,45 @@ class _CuidadorChatTab extends StatelessWidget {
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
+                                if (!minhaMensagem &&
+                                    mensagem.remetente !=
+                                        null)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(
+                                      bottom: 2,
+                                    ),
+                                    child: Text(
+                                      mensagem.remetente!,
+                                      style:
+                                          GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        fontWeight:
+                                            FontWeight.w600,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ),
+
                                 Text(
                                   mensagem.texto,
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
-                                    color: mensagem.recebido
-                                        ? AppTheme.textPrimary
-                                        : Colors.white,
+                                    color: minhaMensagem
+                                        ? Colors.white
+                                        : AppTheme.textPrimary,
                                   ),
                                 ),
+
                                 const SizedBox(height: 4),
+
                                 Text(
                                   mensagem.hora,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
-                                    color: mensagem.recebido
-                                        ? AppTheme.textSecondary
-                                        : Colors.white70,
+                                    color: minhaMensagem
+                                        ? Colors.white70
+                                        : AppTheme.textSecondary,
                                   ),
                                 ),
                               ],
@@ -1919,6 +2027,11 @@ class _CuidadorChatTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _input,
+                      textCapitalization:
+                          TextCapitalization.sentences,
+                      onSubmitted: (_) => _enviar(),
+                      enabled: !_enviando,
                       decoration: InputDecoration(
                         hintText:
                             'Digite uma mensagem...',
@@ -1935,23 +2048,28 @@ class _CuidadorChatTab extends StatelessWidget {
                   const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppTheme.primary,
+                    backgroundColor:
+                        _enviando
+                            ? AppTheme.textLight
+                            : AppTheme.primary,
                     child: IconButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Envio de mensagem será conectado ao Firestore na próxima etapa.',
+                      onPressed:
+                          _enviando ? null : _enviar,
+                      icon: _enviando
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child:
+                                  CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send,
+                              color: Colors.white,
+                              size: 20,
                             ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.send,
-                        color: Colors.white,
-                        size: 20,
-                      ),
                     ),
                   ),
                 ],
