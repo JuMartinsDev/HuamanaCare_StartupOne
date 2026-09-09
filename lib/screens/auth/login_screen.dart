@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/app_state.dart';
-import '../../widgets/shared.dart';
-import '../../theme/app_theme.dart';
+import 'package:humanacare_paciente/models/app_state.dart';
+import 'package:humanacare_paciente/widgets/shared.dart';
+import 'package:humanacare_paciente/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -56,12 +56,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _loading = false;
       });
 
-      // Depois do login, verifica se o usuário já possui perfil.
-      if (appState.perfil.isEmpty) {
-        context.go('/perfil');
-      } else {
-        context.go('/paciente');
-      }
+      // O AppRouter decide automaticamente para onde o usuário deve ir:
+      // /perfil se faltar configuração ou /paciente se já estiver configurado.
+      context.go('/paciente');
     } catch (e) {
       if (!mounted) return;
 
@@ -124,9 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 final email = emailController.text.trim();
 
-                if (email.isEmpty) {
-                  return;
-                }
+                if (email.isEmpty) return;
 
                 Navigator.of(dialogContext).pop(email);
               },
@@ -139,9 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     emailController.dispose();
 
-    if (!mounted || email == null || email.isEmpty) {
-      return;
-    }
+    if (!mounted || email == null || email.isEmpty) return;
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(
@@ -166,13 +159,16 @@ class _LoginScreenState extends State<LoginScreen> {
         case 'invalid-email':
           mensagem = 'Informe um email válido.';
           break;
+
         case 'user-not-found':
           mensagem = 'Não encontramos uma conta com esse email.';
           break;
+
         case 'too-many-requests':
           mensagem =
               'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
           break;
+
         default:
           mensagem =
               'Não foi possível enviar o email. Tente novamente.';
@@ -265,6 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               if (_erro != null) ...[
                 const SizedBox(height: 12),
+
                 Text(
                   _erro!,
                   textAlign: TextAlign.center,

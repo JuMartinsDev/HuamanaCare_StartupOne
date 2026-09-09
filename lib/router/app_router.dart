@@ -1,13 +1,18 @@
 import 'package:go_router/go_router.dart';
 
-import '../models/app_state.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/perfil_screen.dart';
-import '../screens/auth/register_screen.dart';
-import '../screens/paciente/paciente_home.dart';
-import '../screens/paciente/tabs/sos_screen.dart';
-import '../screens/paciente/editar_perfil_screen.dart';
-import '../screens/paciente/alertas_screen.dart';
+import 'package:humanacare_paciente/models/app_state.dart';
+
+import 'package:humanacare_paciente/screens/auth/login_screen.dart';
+import 'package:humanacare_paciente/screens/auth/perfil_screen.dart';
+import 'package:humanacare_paciente/screens/auth/register_screen.dart';
+
+import 'package:humanacare_paciente/screens/paciente/paciente_home.dart';
+import 'package:humanacare_paciente/screens/paciente/tabs/sos_screen.dart';
+import 'package:humanacare_paciente/screens/paciente/editar_perfil_screen.dart';
+import 'package:humanacare_paciente/screens/paciente/alertas_screen.dart';
+
+import 'package:humanacare_paciente/screens/cuidador/cuidador_home.dart';
+import 'package:humanacare_paciente/screens/familiar/familiar_home.dart';
 
 class AppRouter {
   static GoRouter router(AppState appState) {
@@ -17,47 +22,98 @@ class AppRouter {
       refreshListenable: appState,
 
       routes: [
+        // LOGIN
         GoRoute(
           path: '/login',
-          builder: (_, __) => const LoginScreen(),
+          builder: (context, state) =>
+              const LoginScreen(),
         ),
+
+        // CADASTRO
         GoRoute(
           path: '/register',
-          builder: (_, __) => const RegisterScreen(),
+          builder: (context, state) =>
+              const RegisterScreen(),
         ),
+
+        // ESCOLHA DO PERFIL
         GoRoute(
           path: '/perfil',
-          builder: (_, __) => const PerfilScreen(),
+          builder: (context, state) =>
+              const PerfilScreen(),
         ),
+
+        // =========================
+        // PACIENTE
+        // =========================
         GoRoute(
           path: '/paciente',
-          builder: (_, __) => const PacienteHome(),
+          builder: (context, state) =>
+              const PacienteHome(),
         ),
+
+        // =========================
+        // CUIDADOR
+        // =========================
+        GoRoute(
+          path: '/cuidador',
+          builder: (context, state) =>
+              const CuidadorHome(),
+        ),
+
+        // =========================
+        // FAMILIAR
+        // =========================
+        GoRoute(
+          path: '/familiar',
+          builder: (context, state) =>
+              const FamiliarHome(),
+        ),
+
+        // =========================
+        // FUNCIONALIDADES PACIENTE
+        // =========================
+
         GoRoute(
           path: '/sos',
-          builder: (_, __) => const SosScreen(),
+          builder: (context, state) =>
+              const SosScreen(),
         ),
+
         GoRoute(
           path: '/editar-perfil',
-          builder: (_, __) => const EditarPerfilScreen(),
+          builder: (context, state) =>
+              const EditarPerfilScreen(),
         ),
+
         GoRoute(
           path: '/alertas',
-          builder: (_, __) => const AlertasScreen(),
+          builder: (context, state) =>
+              const AlertasScreen(),
         ),
       ],
 
       redirect: (context, state) {
         final loggedIn = appState.logado;
+
         final location = state.matchedLocation;
 
         final isLogin = location == '/login';
+
         final isRegister = location == '/register';
+
         final isPerfil = location == '/perfil';
 
-        // -----------------------------------------
-        // 1. Usuário NÃO autenticado
-        // -----------------------------------------
+        final isPaciente = location == '/paciente';
+
+        final isCuidador = location == '/cuidador';
+
+        final isFamiliar = location == '/familiar';
+
+        // =====================================================
+        // 1. USUÁRIO NÃO ESTÁ LOGADO
+        // =====================================================
+
         if (!loggedIn) {
           if (isLogin || isRegister) {
             return null;
@@ -66,10 +122,10 @@ class AppRouter {
           return '/login';
         }
 
-        // -----------------------------------------
-        // 2. Usuário autenticado, mas ainda
-        // não escolheu o perfil
-        // -----------------------------------------
+        // =====================================================
+        // 2. USUÁRIO ESTÁ LOGADO, MAS NÃO ESCOLHEU PERFIL
+        // =====================================================
+
         if (appState.perfil.isEmpty) {
           if (isPerfil) {
             return null;
@@ -78,13 +134,88 @@ class AppRouter {
           return '/perfil';
         }
 
-        // -----------------------------------------
-        // 3. Usuário autenticado e com perfil
-        // -----------------------------------------
+        // =====================================================
+        // 3. FAMILIAR/CUIDADOR PRECISAM DE VÍNCULO
+        // =====================================================
 
-        // Não faz sentido voltar para login/cadastro
+        final precisaVinculo =
+            appState.perfil == 'familiar' ||
+            appState.perfil == 'cuidador';
+
+        final semVinculo =
+            appState.pacienteVinculadoId == null ||
+            appState.pacienteVinculadoId!.isEmpty;
+
+        if (precisaVinculo && semVinculo) {
+          if (isPerfil) {
+            return null;
+          }
+
+          return '/perfil';
+        }
+
+        // =====================================================
+        // 4. PERFIL PACIENTE
+        // =====================================================
+
+        if (appState.perfil == 'paciente') {
+          if (isPaciente) {
+            return null;
+          }
+
+          // Impede paciente de cair na tela de cuidador/familiar.
+          if (isCuidador || isFamiliar) {
+            return '/paciente';
+          }
+        }
+
+        // =====================================================
+        // 5. PERFIL CUIDADOR
+        // =====================================================
+
+        if (appState.perfil == 'cuidador') {
+          if (isCuidador) {
+            return null;
+          }
+
+          // Impede cuidador de cair na tela do paciente
+          // ou na tela do familiar.
+          if (isPaciente || isFamiliar) {
+            return '/cuidador';
+          }
+        }
+
+        // =====================================================
+        // 6. PERFIL FAMILIAR
+        // =====================================================
+
+        if (appState.perfil == 'familiar') {
+          if (isFamiliar) {
+            return null;
+          }
+
+          // Impede familiar de cair na tela do paciente
+          // ou do cuidador.
+          if (isPaciente || isCuidador) {
+            return '/familiar';
+          }
+        }
+
+        // =====================================================
+        // 7. USUÁRIO JÁ ESTÁ CONFIGURADO
+        // =====================================================
+
         if (isLogin || isRegister || isPerfil) {
-          return '/paciente';
+          switch (appState.perfil) {
+            case 'paciente':
+              return '/paciente';
+
+            case 'cuidador':
+              return '/cuidador';
+
+            case 'familiar':
+              return '/familiar';
+          }
         }
 
         return null;

@@ -24,8 +24,6 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
   final _dispositivosCtrl = TextEditingController();
   final _observacoesCtrl = TextEditingController();
   final _cuidadorNomeCtrl = TextEditingController();
-  final _cuidadorTurnoCtrl = TextEditingController();
-  final _cuidadorCargaCtrl = TextEditingController();
 
   static const List<String> _opcoesSexo = [
     'Feminino',
@@ -54,9 +52,26 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     'Não sei',
   ];
 
+  static const List<String> _opcoesTurno = [
+    'Manhã',
+    'Tarde',
+    'Noite',
+    'Integral',
+  ];
+
+  static const List<String> _opcoesCargaHoraria = [
+    '4 horas',
+    '6 horas',
+    '8 horas',
+    '12 horas',
+    '24 horas',
+  ];
+
   String _sexo = '';
   String _estadoCivil = '';
   String _tipoSanguineo = '';
+  String _cuidadorTurno = '';
+  String _cuidadorCarga = '';
 
   bool _loading = false;
   String? _erro;
@@ -78,11 +93,15 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     _dispositivosCtrl.text = p.dispositivos;
     _observacoesCtrl.text = p.observacoes;
     _cuidadorNomeCtrl.text = p.cuidadorNome;
-    _cuidadorTurnoCtrl.text = p.cuidadorTurno;
-    _cuidadorCargaCtrl.text = p.cuidadorCarga;
 
-    // Só define o valor se ele realmente existir
-    // nas opções disponíveis do dropdown.
+    _cuidadorTurno = _opcoesTurno.contains(p.cuidadorTurno)
+        ? p.cuidadorTurno
+        : '';
+
+    _cuidadorCarga = _opcoesCargaHoraria.contains(p.cuidadorCarga)
+        ? p.cuidadorCarga
+        : '';
+
     _sexo = _opcoesSexo.contains(p.sexo) ? p.sexo : '';
 
     _estadoCivil = _opcoesEstadoCivil.contains(p.estadoCivil)
@@ -113,8 +132,8 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
             dispositivos: _dispositivosCtrl.text.trim(),
             observacoes: _observacoesCtrl.text.trim(),
             cuidadorNome: _cuidadorNomeCtrl.text.trim(),
-            cuidadorTurno: _cuidadorTurnoCtrl.text.trim(),
-            cuidadorCarga: _cuidadorCargaCtrl.text.trim(),
+            cuidadorTurno: _cuidadorTurno,
+            cuidadorCarga: _cuidadorCarga,
           );
 
       if (!mounted) return;
@@ -123,7 +142,9 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
         SnackBar(
           content: Text(
             'Perfil atualizado com sucesso!',
-            style: GoogleFonts.poppins(fontSize: 13),
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+            ),
           ),
         ),
       );
@@ -160,8 +181,6 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
             int.parse(partes[0]),
           );
 
-          // Garante que a data inicial do calendário
-          // nunca fique no futuro.
           if (!dataConvertida.isAfter(DateTime.now())) {
             inicial = dataConvertida;
           }
@@ -201,231 +220,264 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     _dispositivosCtrl.dispose();
     _observacoesCtrl.dispose();
     _cuidadorNomeCtrl.dispose();
-    _cuidadorTurnoCtrl.dispose();
-    _cuidadorCargaCtrl.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: AppTheme.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            size: 20,
-            color: AppTheme.textPrimary,
+    return Consumer<AppState>(
+      builder: (context, state, _) {
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            backgroundColor: AppTheme.background,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 20,
+                color: AppTheme.textPrimary,
+              ),
+              onPressed: () => context.pop(),
+            ),
+            title: Text(
+              'Editar perfil',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            centerTitle: true,
           ),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Editar perfil',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 8,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _tituloSecao('Dados pessoais'),
-
-              _label('Data de nascimento'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'DD/MM/AAAA',
-                controller: _dataNascimentoCtrl,
-                readOnly: true,
-                onTap: _selecionarData,
-                suffix: const Icon(
-                  Icons.calendar_today_outlined,
-                  color: AppTheme.textLight,
-                  size: 20,
-                ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _tituloSecao('Dados pessoais'),
 
-              const SizedBox(height: 14),
+                  _label('Data de nascimento'),
+                  const SizedBox(height: 6),
 
-              _label('Sexo'),
-              const SizedBox(height: 6),
-
-              _dropdown(
-                value: _sexo.isEmpty ? null : _sexo,
-                hint: 'Selecione',
-                items: _opcoesSexo,
-                onChanged: (value) {
-                  setState(() {
-                    _sexo = value ?? '';
-                  });
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Estado civil'),
-              const SizedBox(height: 6),
-
-              _dropdown(
-                value: _estadoCivil.isEmpty ? null : _estadoCivil,
-                hint: 'Selecione',
-                items: _opcoesEstadoCivil,
-                onChanged: (value) {
-                  setState(() {
-                    _estadoCivil = value ?? '';
-                  });
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Endereço'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Rua, número, bairro...',
-                controller: _enderecoCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Telefone'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: '(11) 99999-9999',
-                controller: _telefoneCtrl,
-                keyboard: TextInputType.phone,
-              ),
-
-              const SizedBox(height: 24),
-
-              _tituloSecao('Informações de saúde'),
-
-              _label('Tipo sanguíneo'),
-              const SizedBox(height: 6),
-
-              _dropdown(
-                value: _tipoSanguineo.isEmpty ? null : _tipoSanguineo,
-                hint: 'Selecione',
-                items: _opcoesTipoSanguineo,
-                onChanged: (value) {
-                  setState(() {
-                    _tipoSanguineo = value ?? '';
-                  });
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Condições de saúde'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Ex.: hipertensão, diabetes...',
-                controller: _condicaoSaudeCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Alergias'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Informe suas alergias',
-                controller: _alergiasCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Uso de dispositivos'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Ex.: marcapasso, aparelho auditivo...',
-                controller: _dispositivosCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Observações'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Outras informações importantes',
-                controller: _observacoesCtrl,
-              ),
-
-              const SizedBox(height: 24),
-
-              _tituloSecao('Cuidador principal'),
-
-              _label('Nome do cuidador'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Nome completo',
-                controller: _cuidadorNomeCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Turno'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Ex.: manhã, tarde ou noite',
-                controller: _cuidadorTurnoCtrl,
-              ),
-
-              const SizedBox(height: 14),
-
-              _label('Carga horária'),
-              const SizedBox(height: 6),
-
-              HCField(
-                hint: 'Ex.: 8 horas',
-                controller: _cuidadorCargaCtrl,
-              ),
-
-              if (_erro != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _erro!,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    color: AppTheme.error,
-                    fontSize: 13,
+                  HCField(
+                    hint: 'DD/MM/AAAA',
+                    controller: _dataNascimentoCtrl,
+                    readOnly: true,
+                    onTap: _selecionarData,
+                    suffix: const Icon(
+                      Icons.calendar_today_outlined,
+                      color: AppTheme.textLight,
+                      size: 20,
+                    ),
                   ),
-                ),
-              ],
 
-              const SizedBox(height: 28),
+                  const SizedBox(height: 14),
 
-              HCButton(
-                label: 'Salvar alterações',
-                onTap: _salvar,
-                loading: _loading,
+                  _label('Sexo'),
+                  const SizedBox(height: 6),
+
+                  _dropdown(
+                    value: _sexo.isEmpty ? null : _sexo,
+                    hint: 'Selecione',
+                    items: _opcoesSexo,
+                    onChanged: (value) {
+                      setState(() {
+                        _sexo = value ?? '';
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Estado civil'),
+                  const SizedBox(height: 6),
+
+                  _dropdown(
+                    value: _estadoCivil.isEmpty
+                        ? null
+                        : _estadoCivil,
+                    hint: 'Selecione',
+                    items: _opcoesEstadoCivil,
+                    onChanged: (value) {
+                      setState(() {
+                        _estadoCivil = value ?? '';
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Endereço'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Rua, número, bairro...',
+                    controller: _enderecoCtrl,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Telefone'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: '(11) 99999-9999',
+                    controller: _telefoneCtrl,
+                    keyboard: TextInputType.phone,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  _tituloSecao('Informações de saúde'),
+
+                  _label('Tipo sanguíneo'),
+                  const SizedBox(height: 6),
+
+                  _dropdown(
+                    value: _tipoSanguineo.isEmpty
+                        ? null
+                        : _tipoSanguineo,
+                    hint: 'Selecione',
+                    items: _opcoesTipoSanguineo,
+                    onChanged: (value) {
+                      setState(() {
+                        _tipoSanguineo = value ?? '';
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Condições de saúde'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Ex.: hipertensão, diabetes...',
+                    controller: _condicaoSaudeCtrl,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Alergias'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Informe suas alergias',
+                    controller: _alergiasCtrl,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Uso de dispositivos'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Ex.: marcapasso, aparelho auditivo...',
+                    controller: _dispositivosCtrl,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Observações'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Outras informações importantes',
+                    controller: _observacoesCtrl,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  _tituloSecao('Cuidador principal'),
+
+                  _label('Nome do cuidador'),
+                  const SizedBox(height: 6),
+
+                  HCField(
+                    hint: 'Digite o nome do cuidador',
+                    controller: _cuidadorNomeCtrl,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'Você pode informar ou alterar o nome do cuidador.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.5,
+                      color: AppTheme.textLight,
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Turno'),
+                  const SizedBox(height: 6),
+
+                  _dropdown(
+                    value: _cuidadorTurno.isEmpty
+                        ? null
+                        : _cuidadorTurno,
+                    hint: 'Selecione o turno',
+                    items: _opcoesTurno,
+                    onChanged: (value) {
+                      setState(() {
+                        _cuidadorTurno = value ?? '';
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _label('Carga horária'),
+                  const SizedBox(height: 6),
+
+                  _dropdown(
+                    value: _cuidadorCarga.isEmpty
+                        ? null
+                        : _cuidadorCarga,
+                    hint: 'Selecione a carga horária',
+                    items: _opcoesCargaHoraria,
+                    onChanged: (value) {
+                      setState(() {
+                        _cuidadorCarga = value ?? '';
+                      });
+                    },
+                  ),
+
+                  if (_erro != null) ...[
+                    const SizedBox(height: 16),
+
+                    Text(
+                      _erro!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.error,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 28),
+
+                  HCButton(
+                    label: 'Salvar alterações',
+                    onTap: _salvar,
+                    loading: _loading,
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
               ),
-
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -506,3 +558,4 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
     );
   }
 }
+

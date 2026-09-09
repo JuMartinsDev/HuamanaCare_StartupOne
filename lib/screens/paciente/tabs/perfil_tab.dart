@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -162,6 +163,13 @@ class _PerfilTabState extends State<PerfilTab> {
               ),
             ),
 
+            const SizedBox(height: 20),
+
+            // ── Código de vínculo ─────────────────────────────────────
+            _CardCodigoVinculo(
+              codigo: state.codigoVinculo,
+            ),
+
             const SizedBox(height: 24),
 
             // ── Abas ──────────────────────────────────────────────────
@@ -215,6 +223,7 @@ class _PerfilTabState extends State<PerfilTab> {
 
             const SizedBox(height: 12),
 
+            // ── Sair ──────────────────────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -242,6 +251,163 @@ class _PerfilTabState extends State<PerfilTab> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Código de vínculo
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CardCodigoVinculo extends StatelessWidget {
+  final String? codigo;
+
+  const _CardCodigoVinculo({
+    required this.codigo,
+  });
+
+  Future<void> _copiarCodigo(BuildContext context) async {
+    if (codigo == null || codigo!.trim().isEmpty) return;
+
+    await Clipboard.setData(
+      ClipboardData(text: codigo!),
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Código de vínculo copiado!',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final codigoValido =
+        codigo != null && codigo!.trim().isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.link,
+                  color: AppTheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Código de vínculo',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Para compartilhar com familiar ou cuidador',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.inputFill,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppTheme.primary.withValues(alpha: 0.20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    codigoValido
+                        ? codigo!
+                        : 'Código indisponível',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                      color: codigoValido
+                          ? AppTheme.primary
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: codigoValido
+                      ? () => _copiarCodigo(context)
+                      : null,
+                  tooltip: 'Copiar código',
+                  icon: const Icon(
+                    Icons.copy_outlined,
+                    size: 21,
+                  ),
+                  color: AppTheme.primary,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            'Compartilhe este código com seu familiar ou cuidador '
+            'para que ele possa se vincular à sua conta.',
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              height: 1.5,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -332,7 +498,9 @@ class _Historico extends StatelessWidget {
                   Icon(
                     Icons.history_outlined,
                     size: 38,
-                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                    color: AppTheme.textSecondary.withValues(
+                      alpha: 0.6,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -373,7 +541,8 @@ class _HistoricoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = historico.data;
 
-    final dataFormatada = '${data.day.toString().padLeft(2, '0')}/'
+    final dataFormatada =
+        '${data.day.toString().padLeft(2, '0')}/'
         '${data.month.toString().padLeft(2, '0')}/'
         '${data.year}';
 
@@ -577,7 +746,8 @@ class _EditarDocumentosDialog extends StatefulWidget {
       _EditarDocumentosDialogState();
 }
 
-class _EditarDocumentosDialogState extends State<_EditarDocumentosDialog> {
+class _EditarDocumentosDialogState
+    extends State<_EditarDocumentosDialog> {
   late final TextEditingController _cpfController;
   late final TextEditingController _rgCinController;
   late final TextEditingController _orgaoController;
@@ -936,7 +1106,9 @@ class _TabButton extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: selecionada ? AppTheme.surface : Colors.transparent,
+            color: selecionada
+                ? AppTheme.surface
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           alignment: Alignment.center,
@@ -944,8 +1116,12 @@ class _TabButton extends StatelessWidget {
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              fontWeight: selecionada ? FontWeight.w600 : FontWeight.w400,
-              color: selecionada ? AppTheme.primary : AppTheme.textSecondary,
+              fontWeight: selecionada
+                  ? FontWeight.w600
+                  : FontWeight.w400,
+              color: selecionada
+                  ? AppTheme.primary
+                  : AppTheme.textSecondary,
             ),
           ),
         ),
