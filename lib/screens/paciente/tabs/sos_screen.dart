@@ -1,7 +1,9 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/app_state.dart';
 
@@ -9,6 +11,63 @@ class SosScreen extends StatelessWidget {
   const SosScreen({super.key});
 
   static const Color _vermelho = Color(0xFFB23A36);
+
+  // ============================================================
+  // ABRIR WHATSAPP
+  // ============================================================
+
+  Future<void> _abrirWhatsApp(BuildContext context) async {
+    const mensagem = '''
+🚨 SOS HumanaCare
+
+O paciente acionou uma emergência pelo aplicativo HumanaCare.
+
+Por favor, verifique a situação e entre em contato com o paciente.
+''';
+
+    final uri = Uri.parse(
+      'https://wa.me/?text=${Uri.encodeComponent(mensagem)}',
+    );
+
+    try {
+      final abriu = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!abriu && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Não foi possível abrir o WhatsApp.',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível abrir o WhatsApp.',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: Colors.white,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   // ============================================================
   // CONFIRMAÇÃO DO SOS
@@ -54,7 +113,7 @@ class SosScreen extends StatelessWidget {
             ],
           ),
           content: Text(
-            'O SOS será registrado e o contato de emergência e o cuidador principal serão avisados.',
+            'O SOS será registrado e o WhatsApp será aberto com uma mensagem pronta para o contato de emergência.',
             style: GoogleFonts.poppins(
               fontSize: 13,
               height: 1.4,
@@ -129,7 +188,7 @@ class SosScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'SOS acionado com sucesso.',
+            'SOS acionado. Abrindo o WhatsApp...',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
             ),
@@ -139,7 +198,9 @@ class SosScreen extends StatelessWidget {
           duration: const Duration(seconds: 2),
         ),
       );
-    } catch (e) {
+
+      await _abrirWhatsApp(context);
+    } catch (_) {
       if (!context.mounted) {
         return;
       }
@@ -165,8 +226,7 @@ class SosScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final acionado =
-        context.watch<AppState>().sosAtivado;
+    final acionado = context.watch<AppState>().sosAtivado;
 
     return Scaffold(
       backgroundColor: _vermelho,
@@ -248,8 +308,8 @@ class SosScreen extends StatelessWidget {
 
               Text(
                 acionado
-                    ? 'O contato de emergência e o cuidador principal foram notificados.'
-                    : 'Vamos registrar o SOS e avisar o contato de emergência e o cuidador principal.',
+                    ? 'O SOS foi registrado. O WhatsApp foi aberto com uma mensagem pronta para envio.'
+                    : 'Vamos registrar o SOS e abrir o WhatsApp com uma mensagem para o contato de emergência.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -279,8 +339,7 @@ class SosScreen extends StatelessWidget {
                         vertical: 16,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(26),
+                        borderRadius: BorderRadius.circular(26),
                       ),
                     ),
                     child: Text(
@@ -305,15 +364,10 @@ class SosScreen extends StatelessWidget {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(
-                      0.12,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(16),
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withOpacity(
-                        0.25,
-                      ),
+                      color: Colors.white.withOpacity(0.25),
                     ),
                   ),
                   child: Row(
@@ -326,13 +380,12 @@ class SosScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'O atendimento de emergência está sendo acionado.',
+                          'O SOS foi registrado. Envie a mensagem pelo WhatsApp para avisar o contato.',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             height: 1.35,
                             color: Colors.white,
-                            fontWeight:
-                                FontWeight.w500,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -368,3 +421,4 @@ class SosScreen extends StatelessWidget {
     );
   }
 }
+

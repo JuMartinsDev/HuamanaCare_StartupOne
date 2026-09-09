@@ -1709,14 +1709,52 @@ class AppState extends ChangeNotifier {
   // SOS
   // ============================================================
 
+  String? _sosEventoId;
+
   Future<void> acionarSos() async {
     _sosAtivado = true;
     notifyListeners();
+
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    final docRef = await _firestore
+        .collection('pacientes')
+        .doc(user.uid)
+        .collection('sos_eventos')
+        .add({
+      'dataHora': FieldValue.serverTimestamp(),
+      'status': 'acionado',
+      'tipo': 'sos',
+    });
+
+    _sosEventoId = docRef.id;
   }
 
   Future<void> desativarSos() async {
     _sosAtivado = false;
     notifyListeners();
+
+    final user = _auth.currentUser;
+
+    if (user == null || _sosEventoId == null) {
+      return;
+    }
+
+    await _firestore
+        .collection('pacientes')
+        .doc(user.uid)
+        .collection('sos_eventos')
+        .doc(_sosEventoId)
+        .update({
+      'status': 'finalizado',
+      'dataHoraFinalizacao': FieldValue.serverTimestamp(),
+    });
+
+    _sosEventoId = null;
   }
 
   // ============================================================
@@ -2420,8 +2458,10 @@ class AppState extends ChangeNotifier {
     await _auth.signOut();
 
     _limparEstadoLocal();
-  }
 
+    notifyListeners();
+  }
+  
   // ============================================================
   // ERROS DO FIREBASE AUTH
   // ============================================================
