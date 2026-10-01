@@ -162,21 +162,12 @@ Compromisso copyWith({
 class Mensagem {
   final String id;
   final String texto;
-
-  // Define visualmente se a mensagem é recebida
-  // pelo usuário que está visualizando o chat.
   final bool recebido;
-
   final String hora;
   final bool isMilo;
-
-  // Nome exibido do remetente.
   final String? remetente;
-
-  // UID do usuário que enviou a mensagem.
-  // Usado para determinar corretamente quem enviou
-  // e quem recebeu a mensagem.
   final String? remetenteUid;
+  final DateTime criadaEm;
 
   Mensagem({
     required this.id,
@@ -186,13 +177,35 @@ class Mensagem {
     this.isMilo = false,
     this.remetente,
     this.remetenteUid,
-  });
+    DateTime? criadaEm,
+  }) : criadaEm = criadaEm ?? DateTime.now();
 
-  // Firestore -> Flutter
   factory Mensagem.fromMap(
     String id,
     Map<String, dynamic> map,
   ) {
+    final valorData = map['criadaEm'];
+
+    DateTime dataCriacao;
+
+    if (valorData is String) {
+      dataCriacao =
+          DateTime.tryParse(valorData) ?? DateTime.now();
+    } else if (valorData is DateTime) {
+      dataCriacao = valorData;
+    } else {
+      // Compatibilidade com mensagens antigas.
+      final idNumerico = RegExp(r'^[ua](\d+)$')
+          .firstMatch(id)
+          ?.group(1);
+
+      dataCriacao = idNumerico != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              int.parse(idNumerico),
+            )
+          : DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
     return Mensagem(
       id: id,
       texto: map['texto'] ?? '',
@@ -201,10 +214,10 @@ class Mensagem {
       isMilo: map['isMilo'] ?? false,
       remetente: map['remetente'],
       remetenteUid: map['remetenteUid'],
+      criadaEm: dataCriacao,
     );
   }
 
-  // Flutter -> Firestore
   Map<String, dynamic> toMap() {
     return {
       'texto': texto,
@@ -213,6 +226,7 @@ class Mensagem {
       'isMilo': isMilo,
       'remetente': remetente,
       'remetenteUid': remetenteUid,
+      'criadaEm': criadaEm.toIso8601String(),
     };
   }
 }

@@ -1423,6 +1423,7 @@ class AppState extends ChangeNotifier {
               : remetente,
       remetenteUid:
           remetenteUid,
+      criadaEm: mensagem.criadaEm,
     );
   }
 
@@ -1447,10 +1448,9 @@ class AppState extends ChangeNotifier {
         recebido: mensagem.recebido,
         hora: mensagem.hora,
         isMilo: true,
-        remetente:
-            mensagem.remetente ?? 'Milo',
-        remetenteUid:
-            mensagem.remetenteUid,
+        remetente: mensagem.remetente ?? 'Milo',
+        remetenteUid: mensagem.remetenteUid,
+        criadaEm: mensagem.criadaEm,
       );
     }
 
@@ -1473,10 +1473,9 @@ class AppState extends ChangeNotifier {
       recebido: !euEnviei,
       hora: mensagem.hora,
       isMilo: mensagem.isMilo,
-      remetente:
-          mensagem.remetente,
-      remetenteUid:
-          mensagem.remetenteUid,
+      remetente: mensagem.remetente,
+      remetenteUid: mensagem.remetenteUid,
+      criadaEm: mensagem.criadaEm,
     );
   }
 
@@ -1512,26 +1511,29 @@ class AppState extends ChangeNotifier {
               .collection('mensagens')
               .get();
 
-      final mensagensCarregadas =
-          snapshot.docs
-              .map(
-                (doc) {
-                  final mensagem =
-                      Mensagem.fromMap(
-                    doc.id,
-                    doc.data(),
-                  );
+        final mensagensCarregadas =
+            snapshot.docs
+                .map(
+                  (doc) {
+                    final mensagem =
+                        Mensagem.fromMap(
+                      doc.id,
+                      doc.data(),
+                    );
 
-                  return _mensagemParaUsuarioAtual(
-                    canal,
-                    mensagem,
-                  );
-                },
-              )
-              .toList();
+                    return _mensagemParaUsuarioAtual(
+                      canal,
+                      mensagem,
+                    );
+                  },
+                )
+                .toList();
 
-      _msgs[canal] =
-          mensagensCarregadas;
+        mensagensCarregadas.sort(
+          (a, b) => a.criadaEm.compareTo(b.criadaEm),
+        );
+
+        _msgs[canal] = mensagensCarregadas;
 
       _iniciarListenerMensagens(
         pacienteId,
@@ -1560,26 +1562,25 @@ class AppState extends ChangeNotifier {
     _mensagemListeners[canal] =
         mensagensRef.snapshots().listen(
       (snapshot) {
-        final mensagens =
-            snapshot.docs
-                .map(
-                  (doc) {
-                    final mensagem =
-                        Mensagem.fromMap(
-                      doc.id,
-                      doc.data(),
-                    );
+                final mensagens = snapshot.docs
+              .map((doc) {
+                final mensagem = Mensagem.fromMap(
+                  doc.id,
+                  doc.data(),
+                );
+                return _mensagemParaUsuarioAtual(
+                  canal,
+                  mensagem,
+                );
+              })
+              .toList();
 
-                    return _mensagemParaUsuarioAtual(
-                      canal,
-                      mensagem,
-                    );
-                  },
-                )
-                .toList();
+          mensagens.sort(
+            (a, b) => a.criadaEm.compareTo(b.criadaEm),
+          );
 
-        _msgs[canal] =
-            mensagens;
+          _msgs[canal] = mensagens;
+          notifyListeners();
 
         notifyListeners();
       },
@@ -1671,6 +1672,7 @@ class AppState extends ChangeNotifier {
             mensagemParaSalvar.remetente,
         remetenteUid:
             mensagemParaSalvar.remetenteUid,
+        criadaEm: mensagemParaSalvar.criadaEm,
       ),
     );
 

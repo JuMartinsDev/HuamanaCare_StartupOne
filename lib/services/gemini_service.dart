@@ -14,7 +14,6 @@ class GeminiService {
   // Execute o projeto com:
   // flutter run --dart-define=GEMINI_API_KEY=sua_chave_aqui
   //
-  // Nunca coloque a chave diretamente neste arquivo.
   static const String _apiKey =
       String.fromEnvironment('GEMINI_API_KEY');
 

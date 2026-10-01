@@ -45,72 +45,77 @@ void initState() {
         '${t.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _enviar() async {
-    final txt = _input.text.trim();
 
-    if (txt.isEmpty) return;
+Future<void> _enviar() async {
+  final txt = _input.text.trim();
+  if (txt.isEmpty) return;
 
-    final state = context.read<AppState>();
+  final state = context.read<AppState>();
+  final idMensagemUsuario =
+      'u${DateTime.now().millisecondsSinceEpoch}';
+
+  try {
+    await state.addMensagem(
+      _canal,
+      Mensagem(
+        id: idMensagemUsuario,
+        texto: txt,
+        recebido: false,
+        hora: _horaAgora(),
+      ),
+    );
+
+    _input.clear();
+    _rolarParaFim();
+
+    // Resposta automática apenas no canal Milo.
+    if (_canal != 'milo') return;
 
     try {
+      final paciente = state.paciente;
+      final remedios = state.remedios;
+      final compromissos = state.compromissos;
+
+      // Monta o histórico sem repetir a mensagem atual.
+      final historico = <Map<String, String>>[];
+
+      final resposta = await GeminiService.enviarMensagem(
+        mensagemUsuario: txt,
+        historico: historico,
+        paciente: paciente,
+        remedios: remedios,
+        compromissos: compromissos,
+      );
+
+      debugPrint('[ChatTab] Resposta recebida: ${resposta.substring(0, resposta.length > 80 ? 80 : resposta.length)}');
+      debugPrint('[ChatTab] Canal atual: $_canal');
+
+      if (!mounted) return;
+
+      debugPrint('[ChatTab] Salvando resposta do Milo...');
+
       await state.addMensagem(
         _canal,
         Mensagem(
-          id: 'u${DateTime.now().millisecondsSinceEpoch}',
-          texto: txt,
-          recebido: false,
+          id: 'a${DateTime.now().millisecondsSinceEpoch}',
+          texto: resposta,
+          recebido: true,
           hora: _horaAgora(),
+          isMilo: true,
+          remetente: 'Milo',
         ),
       );
 
-      _input.clear();
-      _rolarParaFim();
+      debugPrint('[ChatTab] Resposta salva. Total de mensagens: ${state.mensagens(_canal).length}');
 
-      // Resposta automática apenas no canal "milo".
-      if (_canal != 'milo') return;
+      _rolarParaFim();
+    } catch (e, stackTrace) {
+      debugPrint('Erro no fluxo do Milo: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
 
       try {
-        // Dados reais carregados pelo AppState a partir do Firestore.
-        final paciente = state.paciente;
-        final remedios = state.remedios;
-        final compromissos = state.compromissos;
-
-        // Monta o histórico da conversa atual.
-        final historico = <Map<String, String>>[];
-
-        final msgs = state.mensagens(_canal);
-
-        for (final m in msgs) {
-          historico.add({
-            'role': m.recebido ? 'model' : 'user',
-            'text': m.texto,
-          });
-        }
-
-        final resposta = await GeminiService.enviarMensagem(
-          mensagemUsuario: txt,
-          historico: historico,
-          paciente: paciente,
-          remedios: remedios,
-          compromissos: compromissos,
-        );
-
-        if (!mounted) return;
-
-        await state.addMensagem(
-          _canal,
-          Mensagem(
-            id: 'a${DateTime.now().millisecondsSinceEpoch}',
-            texto: resposta,
-            recebido: true,
-            hora: _horaAgora(),
-            isMilo: true,
-            remetente: 'Milo',
-          ),
-        );
-      } catch (_) {
-        if (!mounted) return;
-
         await state.addMensagem(
           _canal,
           Mensagem(
@@ -123,21 +128,27 @@ void initState() {
             remetente: 'Milo',
           ),
         );
-      } finally {
-        _rolarParaFim();
+      } catch (erroSalvar) {
+        debugPrint(
+          'Erro ao salvar resposta do Milo: $erroSalvar',
+        );
       }
-    } catch (_) {
-      if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Não foi possível enviar a mensagem.',
-          ),
-        ),
-      );
+      _rolarParaFim();
     }
+  } catch (e, stackTrace) {
+    debugPrint('Erro ao enviar mensagem: $e');
+    debugPrintStack(stackTrace: stackTrace);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Não foi possível enviar a mensagem.'),
+      ),
+    );
   }
+}
 
   void _rolarParaFim() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,9 +162,17 @@ void initState() {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final msgs = context.watch<AppState>().mensagens(_canal);
+@override
+Widget build(BuildContext context) {
+  final msgs = context.watch<AppState>().mensagens(_canal);
+
+  for (final m in msgs) {
+    debugPrint(
+      '[ORDEM] id=${m.id} | recebido=${m.recebido} | '
+      'milo=${m.isMilo} | hora=${m.hora} | '
+      'criadaEm=${m.criadaEm} | texto=${m.texto}',
+    );
+  }
 
     return SafeArea(
       child: Column(
