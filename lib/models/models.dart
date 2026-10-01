@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
 class Remedio {
   final String id;
   final String nome;
@@ -8,6 +9,7 @@ class Remedio {
   bool tomado;
   final DateTime? dataInicio;
   final DateTime? dataFim;
+  DateTime? dataTomado;
 
   Remedio({
     required this.id,
@@ -17,9 +19,9 @@ class Remedio {
     this.tomado = false,
     this.dataInicio,
     this.dataFim,
+    this.dataTomado,
   });
 
-  // Firestore -> Flutter
   factory Remedio.fromMap(
     String id,
     Map<String, dynamic> map,
@@ -38,18 +40,26 @@ class Remedio {
       return null;
     }
 
+    final dataTomado = converterData(map['dataTomado']);
+    final agora = DateTime.now();
+
+    final tomadoHoje = dataTomado != null &&
+        dataTomado.year == agora.year &&
+        dataTomado.month == agora.month &&
+        dataTomado.day == agora.day;
+
     return Remedio(
       id: id,
       nome: map['nome'] ?? '',
       tipo: map['tipo'] ?? '',
       horario: map['horario'] ?? '',
-      tomado: map['tomado'] ?? false,
+      tomado: map['tomado'] == true && tomadoHoje,
       dataInicio: converterData(map['dataInicio']),
       dataFim: converterData(map['dataFim']),
+      dataTomado: dataTomado,
     );
   }
 
-  // Flutter -> Firestore
   Map<String, dynamic> toMap() {
     return {
       'nome': nome,
@@ -58,6 +68,7 @@ class Remedio {
       'tomado': tomado,
       'dataInicio': dataInicio?.toIso8601String(),
       'dataFim': dataFim?.toIso8601String(),
+      'dataTomado': dataTomado?.toIso8601String(),
     };
   }
 }
@@ -71,6 +82,7 @@ class Compromisso {
   final String mesAbrev;
   final String diaAbrev;
   final DateTime? data;
+  final String status;
 
   const Compromisso({
     this.id = '',
@@ -81,6 +93,7 @@ class Compromisso {
     required this.mesAbrev,
     required this.diaAbrev,
     this.data,
+    this.status = 'pendente',
   });
 
   factory Compromisso.fromMap(
@@ -104,8 +117,33 @@ class Compromisso {
       mesAbrev: map['mesAbrev'] ?? '',
       diaAbrev: map['diaAbrev'] ?? '',
       data: data,
+      status: map['status'] ?? 'pendente',
     );
   }
+
+Compromisso copyWith({
+  String? id,
+  String? titulo,
+  String? horario,
+  String? local,
+  int? dia,
+  String? mesAbrev,
+  String? diaAbrev,
+  DateTime? data,
+  String? status,
+}) {
+  return Compromisso(
+    id: id ?? this.id,
+    titulo: titulo ?? this.titulo,
+    horario: horario ?? this.horario,
+    local: local ?? this.local,
+    dia: dia ?? this.dia,
+    mesAbrev: mesAbrev ?? this.mesAbrev,
+    diaAbrev: diaAbrev ?? this.diaAbrev,
+    data: data ?? this.data,
+    status: status ?? this.status,
+  );
+}
 
   Map<String, dynamic> toMap() {
     return {
@@ -116,6 +154,7 @@ class Compromisso {
       'mesAbrev': mesAbrev,
       'diaAbrev': diaAbrev,
       'data': data?.toIso8601String(),
+      'status': status,
     };
   }
 }

@@ -8,14 +8,25 @@ import '../../../models/models.dart';
 import '../../../services/gemini_service.dart';
 
 class ChatTab extends StatefulWidget {
-  const ChatTab({super.key});
+  final String canalInicial;
+
+  const ChatTab({
+    super.key,
+    this.canalInicial = 'familia',
+  });
 
   @override
   State<ChatTab> createState() => _ChatTabState();
 }
 
 class _ChatTabState extends State<ChatTab> {
-  String _canal = 'familia';
+late String _canal;
+
+@override
+void initState() {
+  super.initState();
+  _canal = widget.canalInicial;
+}
 
   final _input = TextEditingController();
   final _scroll = ScrollController();

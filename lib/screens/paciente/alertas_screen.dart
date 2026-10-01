@@ -12,18 +12,94 @@ class AlertasScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
 
-    final medicamentosPendentes =
-        state.remedios.where((remedio) => !remedio.tomado).toList();
-
 final agora = DateTime.now();
 
-    final compromissos = state.compromissos.where((compromisso) {
-      final data = compromisso.data;
-      return data != null && !data.isBefore(agora);
-    }).toList();
+final hoje = DateTime(
+  agora.year,
+  agora.month,
+  agora.day,
+);
 
-    final totalAlertas =
-        medicamentosPendentes.length + compromissos.length;
+final agoraMinutos = agora.hour * 60 + agora.minute;
+
+int converterHorarioEmMinutos(String horario) {
+  final partes = horario.split(':');
+
+  if (partes.length < 2) {
+    return 9999;
+  }
+
+  final hora = int.tryParse(partes[0]);
+  final minuto = int.tryParse(partes[1]);
+
+  if (hora == null || minuto == null) {
+    return 9999;
+  }
+
+  return hora * 60 + minuto;
+}
+
+// =========================
+// MEDICAMENTOS QUE PRECISAM DE ATENÇÃO
+// =========================
+final medicamentosPendentes = state.remedios.where((remedio) {
+  final inicio = remedio.dataInicio;
+  final fim = remedio.dataFim;
+
+  final inicioValido = inicio == null ||
+      !DateTime(
+        inicio.year,
+        inicio.month,
+        inicio.day,
+      ).isAfter(hoje);
+
+  final fimValido = fim == null ||
+      !DateTime(
+        fim.year,
+        fim.month,
+        fim.day,
+      ).isBefore(hoje);
+
+  if (!inicioValido || !fimValido) {
+    return false;
+  }
+
+  if (remedio.tomado) {
+    return false;
+  }
+
+  final minutos = converterHorarioEmMinutos(
+    remedio.horario,
+  );
+
+  return minutos != 9999 && minutos < agoraMinutos;
+}).toList();
+
+// =========================
+// COMPROMISSOS DE HOJE
+// =========================
+final compromissos = state.compromissos.where((compromisso) {
+  final data = compromisso.data;
+
+  if (data == null) {
+    return false;
+  }
+
+  final dataCompromisso = DateTime(
+    data.year,
+    data.month,
+    data.day,
+  );
+
+  if (!dataCompromisso.isAtSameMomentAs(hoje)) {
+    return false;
+  }
+
+  return compromisso.status == 'pendente';
+}).toList();
+
+final totalAlertas =
+    medicamentosPendentes.length + compromissos.length;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -72,7 +148,7 @@ final agora = DateTime.now();
                             icone: Icons.medication_outlined,
                             titulo: remedio.nome,
                             descricao:
-                                'Medicamento pendente às ${remedio.horario}',
+                                  'Medicamento ainda não registrado • ${remedio.horario}',
                             cor: AppTheme.primary,
                           ),
                         ),
@@ -166,7 +242,7 @@ class _ResumoAlertas extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Itens que precisam da sua atenção',
+                  'Confira as pendências da sua rotina de hoje',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: AppTheme.textSecondary,

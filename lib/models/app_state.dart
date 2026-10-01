@@ -967,31 +967,26 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
-  Future<void> toggleRemedio(
-    String id,
-  ) async {
-    final pacienteId =
-        pacienteIdDados;
+  Future<void> toggleRemedio(String id) async {
+    final pacienteId = pacienteIdDados;
 
     if (pacienteId == null) {
       return;
     }
 
-    final index =
-        _remedios.indexWhere(
-      (remedio) =>
-          remedio.id == id,
+    final index = _remedios.indexWhere(
+      (remedio) => remedio.id == id,
     );
 
     if (index == -1) {
       return;
     }
 
-    final remedio =
-        _remedios[index];
+    final remedio = _remedios[index];
 
-    remedio.tomado =
-        !remedio.tomado;
+    remedio.tomado = !remedio.tomado;
+    remedio.dataTomado =
+        remedio.tomado ? DateTime.now() : null;
 
     notifyListeners();
 

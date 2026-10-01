@@ -11,10 +11,12 @@ import 'tabs/perfil_tab.dart';
 
 class PacienteHome extends StatefulWidget {
   final int abaInicial;
+  final String? canalChatInicial;
 
   const PacienteHome({
     super.key,
     this.abaInicial = 2,
+    this.canalChatInicial,
   });
 
   @override
@@ -24,18 +26,23 @@ class PacienteHome extends StatefulWidget {
 class _PacienteHomeState extends State<PacienteHome> {
   late int _aba;
 
-  static const _telas = [
-    ChatTab(),
-    AtividadesTab(),
-    InicioTab(),
-    RemediosTab(),
-    PerfilTab(),
-  ];
+  late final List<Widget> _telas;
 
   @override
   void initState() {
     super.initState();
+
     _aba = widget.abaInicial;
+
+    _telas = [
+      ChatTab(
+        canalInicial: widget.canalChatInicial ?? 'familia',
+      ),
+      const AtividadesTab(),
+      InicioTab(),
+      const RemediosTab(),
+      const PerfilTab(),
+    ];
   }
 
   @override
