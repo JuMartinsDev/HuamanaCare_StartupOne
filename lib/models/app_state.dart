@@ -36,6 +36,11 @@ class AppState extends ChangeNotifier {
   String? _cuidadorUid;
   String? _cuidadorNome;
 
+  List<Map<String, String>> _familiaresVinculados = [];
+
+  List<Map<String, String>> get familiaresVinculados =>
+    List.unmodifiable(_familiaresVinculados);
+
   String? get pacienteVinculadoId => _pacienteVinculadoId;
   String? get codigoVinculo => _codigoVinculo;
 
@@ -110,6 +115,33 @@ class AppState extends ChangeNotifier {
   );
 
   Paciente get paciente => _paciente;
+
+  Future<void> _carregarFamiliaresVinculados(String pacienteId) async {
+  final snapshot = await _firestore
+      .collection('pacientes')
+      .where(
+        'pacienteVinculadoId',
+        isEqualTo: pacienteId,
+      )
+      .get();
+
+  _familiaresVinculados = snapshot.docs
+      .where((doc) {
+        final dados = doc.data();
+        return dados['perfil']?.toString() == 'familiar';
+      })
+      .map((doc) {
+        final dados = doc.data();
+
+        final nome = dados['nome']?.toString().trim() ?? '';
+
+        return {
+          'uid': doc.id,
+          'nome': nome.isEmpty ? 'Familiar' : nome,
+        };
+      })
+      .toList();
+}
 
   // ============================================================
   // REMÉDIOS
@@ -474,6 +506,8 @@ class AppState extends ChangeNotifier {
         ...dados,
         'id': pacienteId,
       });
+
+      await _carregarFamiliaresVinculados(pacienteId);
 
       // ==========================================================
       // CARREGA CUIDADOR DIRETAMENTE DO FIRESTORE
@@ -2409,6 +2443,7 @@ class AppState extends ChangeNotifier {
     _remedios = [];
     _compromissos = [];
     _historico = [];
+    _familiaresVinculados = [];
 
     _msgs['familia'] = [];
     _msgs['cuidador'] = [];

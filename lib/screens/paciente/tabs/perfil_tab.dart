@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/app_state.dart';
 import '../../../models/models.dart';
@@ -219,36 +220,30 @@ class _PerfilTabState extends State<PerfilTab> {
             const SizedBox(height: 24),
 
             // ── Cuidador ──────────────────────────────────────────────
-            if (_abaSelecionada == 0) _CardCuidador(p: p),
+            if (_abaSelecionada == 0) _CardRedeCuidado(),
 
             const SizedBox(height: 12),
 
-            // ── Sair ──────────────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _confirmarSaida,
-                icon: const Icon(
-                  Icons.logout_outlined,
-                  size: 19,
-                ),
-                label: const Text(
-                  'Sair da conta',
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: BorderSide(
-                    color: Colors.red.withValues(alpha: 0.35),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
+// ── Sair ──────────────────────────────────────────────────
+const SizedBox(height: 24),
+
+SizedBox(
+  width: double.infinity,
+  child: OutlinedButton.icon(
+    onPressed: _confirmarSaida,
+    icon: const Icon(
+      Icons.logout,
+      size: 18,
+    ),
+    label: Text(
+      'Sair',
+      style: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+),         
           ],
         ),
       ),
@@ -953,49 +948,155 @@ class _EditarDocumentosDialogState
 // Card do cuidador
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _CardCuidador extends StatelessWidget {
-  final dynamic p;
+class _CardRedeCuidado extends StatelessWidget {
+  const _CardRedeCuidado();
 
-  const _CardCuidador({
-    required this.p,
-  });
+  Future<void> _abrirWhatsApp(BuildContext context) async {
+    final uri = Uri.parse('https://wa.me/');
+
+    try {
+      final abriu = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!abriu && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Não foi possível abrir o WhatsApp.',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível abrir o WhatsApp.',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: Colors.white,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final p = state.paciente;
+
     return _InfoCard(
-      title: 'Cuidador',
+      title: 'Rede de Cuidado',
       children: [
-        _InfoRow(
-          label: 'Nome',
-          value: p.cuidadorNome,
-        ),
-        _InfoRow(
-          label: 'Turno',
-          value: p.cuidadorTurno,
-        ),
-        _InfoRow(
-          label: 'Carga horária',
-          value: p.cuidadorCarga,
+        // ========================================================
+        // CUIDADOR
+        // ========================================================
+        Text(
+          'Cuidador',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 6,
+
+        if (state.temCuidador) ...[
+          _InfoRow(
+            label: 'Nome',
+            value: state.cuidadorNome ?? 'Cuidador',
           ),
-          decoration: BoxDecoration(
-            color: AppTheme.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(20),
+          _InfoRow(
+            label: 'Turno',
+            value: p.cuidadorTurno,
           ),
-          child: Text(
-            'Familiar',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.primary,
+          _InfoRow(
+            label: 'Carga horária',
+            value: p.cuidadorCarga,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Cuidador vinculado',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primary,
+              ),
             ),
           ),
+        ] else ...[
+          Text(
+            'Nenhum cuidador vinculado.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => _abrirWhatsApp(context),
+            icon: const Icon(Icons.chat_outlined, size: 18),
+            label: Text(
+              'Compartilhar pelo WhatsApp',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
+        // ========================================================
+        // FAMILIARES
+        // ========================================================
+        Text(
+          'Familiares',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
         ),
+        const SizedBox(height: 8),
+
+        if (state.familiaresVinculados.isEmpty)
+          Text(
+            'Nenhum familiar vinculado.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          )
+        else
+          ...state.familiaresVinculados.map(
+            (familiar) => _InfoRow(
+              label: 'Nome',
+              value: familiar['nome'] ?? 'Familiar',
+            ),
+          ),
       ],
     );
   }
