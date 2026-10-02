@@ -191,8 +191,10 @@ class AppState extends ChangeNotifier {
   // ============================================================
 
   bool _sosAtivado = false;
-
   bool get sosAtivado => _sosAtivado;
+  String? get sosEventoId => _sosEventoId;
+DateTime? get sosDataHora => _sosDataHora;
+  DateTime? _sosDataHora;
 
   // ============================================================
   // INICIALIZAÇÃO
@@ -508,6 +510,7 @@ class AppState extends ChangeNotifier {
       });
 
       await _carregarFamiliaresVinculados(pacienteId);
+      await _carregarSosAtivo(pacienteId);
 
       // ==========================================================
       // CARREGA CUIDADOR DIRETAMENTE DO FIRESTORE
@@ -1763,6 +1766,7 @@ class AppState extends ChangeNotifier {
     });
 
     _sosEventoId = docRef.id;
+    _sosDataHora = DateTime.now();
   }
 
   Future<void> desativarSos() async {
@@ -1786,7 +1790,37 @@ class AppState extends ChangeNotifier {
     });
 
     _sosEventoId = null;
+    _sosDataHora = null;
   }
+
+Future<void> _carregarSosAtivo(String pacienteId) async {
+  final snapshot = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('sos_eventos')
+      .where('status', isEqualTo: 'acionado')
+      .limit(1)
+      .get();
+
+  if (snapshot.docs.isEmpty) {
+    _sosAtivado = false;
+    _sosEventoId = null;
+    _sosDataHora = null;
+    return;
+  }
+
+  final dados = snapshot.docs.first.data();
+  final dataHora = dados['dataHora'];
+
+  _sosAtivado = true;
+  _sosEventoId = snapshot.docs.first.id;
+
+  if (dataHora is Timestamp) {
+    _sosDataHora = dataHora.toDate();
+  } else {
+    _sosDataHora = null;
+  }
+}
 
   // ============================================================
   // DEFINIR PERFIL

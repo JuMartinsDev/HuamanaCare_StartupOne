@@ -191,6 +191,7 @@ Por favor, verifique a situação e entre em contato com o paciente.
             'SOS acionado. Abrindo o WhatsApp...',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
           backgroundColor: Colors.white,
@@ -211,6 +212,7 @@ Por favor, verifique a situação e entre em contato com o paciente.
             'Não foi possível acionar o SOS. Tente novamente.',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
           backgroundColor: Colors.white,
@@ -220,13 +222,136 @@ Por favor, verifique a situação e entre em contato com o paciente.
     }
   }
 
+  Future<void> _finalizarSos(BuildContext context) async {
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'Finalizar SOS?',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        content: Text(
+          'O atendimento de emergência será marcado como finalizado.',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            height: 1.4,
+            color: Colors.black54,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          16,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, false);
+            },
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext, true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _vermelho,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+            ),
+            child: Text(
+              'Finalizar',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (confirmar != true) {
+    return;
+  }
+
+  try {
+    await context.read<AppState>().desativarSos();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+content: Text(
+  'SOS finalizado.',
+  style: GoogleFonts.poppins(
+    fontWeight: FontWeight.w600,
+    color: Colors.black87,
+  ),
+),
+backgroundColor: Colors.white,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  } catch (_) {
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Não foi possível finalizar o SOS.',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
   // ============================================================
   // BUILD
   // ============================================================
 
+String _formatarDataHora(DateTime dataHora) {
+  final dia = dataHora.day.toString().padLeft(2, '0');
+  final mes = dataHora.month.toString().padLeft(2, '0');
+  final hora = dataHora.hour.toString().padLeft(2, '0');
+  final minuto = dataHora.minute.toString().padLeft(2, '0');
+
+  return '$dia/$mes às $hora:$minuto';
+}
+
   @override
   Widget build(BuildContext context) {
-    final acionado = context.watch<AppState>().sosAtivado;
+final state = context.watch<AppState>();
+final acionado = state.sosAtivado;
 
     return Scaffold(
       backgroundColor: _vermelho,
@@ -380,18 +505,50 @@ Por favor, verifique a situação e entre em contato com o paciente.
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'O SOS foi registrado. Envie a mensagem pelo WhatsApp para avisar o contato.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            height: 1.35,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+    state.sosDataHora == null
+      ? 'O SOS foi registrado. Envie a mensagem pelo WhatsApp para avisar o contato.'
+      : 'SOS acionado em ${_formatarDataHora(state.sosDataHora!)}.\n'
+          'Envie a mensagem pelo WhatsApp para avisar o contato.',
+  style: GoogleFonts.poppins(
+    fontSize: 12,
+color: Colors.white,
+  ),
+  textAlign: TextAlign.center,
+),
                       ),
                     ],
                   ),
                 ),
+
+                if (acionado) ...[
+  const SizedBox(height: 12),
+  SizedBox(
+    width: double.infinity,
+    child: OutlinedButton(
+      onPressed: () => _finalizarSos(context),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: const BorderSide(
+          color: Colors.white,
+          width: 1.2,
+        ),
+        padding: const EdgeInsets.symmetric(
+          vertical: 14,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(26),
+        ),
+      ),
+      child: Text(
+        'Finalizar SOS',
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  ),
+],
 
               const SizedBox(height: 12),
 
