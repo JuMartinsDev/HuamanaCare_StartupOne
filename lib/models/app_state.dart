@@ -161,6 +161,10 @@ class AppState extends ChangeNotifier {
   List<Compromisso> get compromissos =>
       List.unmodifiable(_compromissos);
 
+  List<Cuidado> _cuidados = [];
+
+List<Cuidado> get cuidados => List.unmodifiable(_cuidados);
+
   // ============================================================
   // HISTÓRICO
   // ============================================================
@@ -553,10 +557,154 @@ DateTime? get sosDataHora => _sosDataHora;
       pacienteId,
     );
 
+    await _carregarCuidados(pacienteId);
+
     await _carregarHistorico(
       pacienteId,
     );
   }
+
+  Future<void> _carregarCuidados(String pacienteId) async {
+  final snapshot = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados')
+      .get();
+
+  _cuidados = snapshot.docs
+      .map(
+        (doc) => Cuidado.fromMap(
+          doc.id,
+          doc.data(),
+        ),
+      )
+      .toList();
+
+  notifyListeners();
+}
+
+Future<void> addCuidado(Cuidado cuidado) async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null || pacienteId.isEmpty) {
+    throw Exception(
+      'Nenhum paciente vinculado.',
+    );
+  }
+
+  final colecao = _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados');
+
+  final docRef = colecao.doc();
+
+  final cuidadoSalvo = cuidado.copyWith(
+    id: docRef.id,
+  );
+
+  await docRef.set(
+    cuidadoSalvo.toMap(),
+  );
+
+  _cuidados.add(cuidadoSalvo);
+
+  notifyListeners();
+}
+
+Future<void> updateCuidado(Cuidado cuidado) async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null || pacienteId.isEmpty) {
+    throw Exception(
+      'Nenhum paciente vinculado.',
+    );
+  }
+
+  if (cuidado.id.isEmpty) {
+    throw Exception(
+      'Não foi possível atualizar o cuidado sem ID.',
+    );
+  }
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados')
+      .doc(cuidado.id)
+      .set(
+        cuidado.toMap(),
+        SetOptions(merge: true),
+      );
+
+  final index = _cuidados.indexWhere(
+    (item) => item.id == cuidado.id,
+  );
+
+  if (index != -1) {
+    _cuidados[index] = cuidado;
+  }
+
+  notifyListeners();
+}
+
+Future<void> removeCuidado(String id) async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null || pacienteId.isEmpty) {
+    return;
+  }
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados')
+      .doc(id)
+      .delete();
+
+  _cuidados.removeWhere(
+    (cuidado) => cuidado.id == id,
+  );
+
+  notifyListeners();
+}
+
+Future<void> concluirCuidado(
+  String cuidadoId,
+  DateTime data,
+) async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null ||
+      pacienteId.isEmpty ||
+      cuidadoId.isEmpty) {
+    return;
+  }
+
+  final index = _cuidados.indexWhere(
+    (item) => item.id == cuidadoId,
+  );
+
+  if (index == -1) {
+    return;
+  }
+
+  final cuidado = _cuidados[index];
+  final cuidadoAtualizado = cuidado.marcarConcluidoEm(data);
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados')
+      .doc(cuidadoId)
+      .update({
+    'conclusoesPorData': cuidadoAtualizado.conclusoesPorData,
+  });
+
+  _cuidados[index] = cuidadoAtualizado;
+
+  notifyListeners();
+}
 
   // ============================================================
   // CALCULAR IDADE

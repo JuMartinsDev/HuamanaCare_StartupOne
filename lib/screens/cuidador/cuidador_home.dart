@@ -17,13 +17,19 @@ class CuidadorHome extends StatefulWidget {
 class _CuidadorHomeState extends State<CuidadorHome> {
   int _abaAtual = 0;
 
-  final List<Widget> _abas = const [
-    _CuidadorInicioTab(),
-    _CuidadorRemediosTab(),
-    _CuidadorCompromissosTab(),
-    _CuidadorChatTab(),
-    _CuidadorPerfilTab(),
-  ];
+List<Widget> get _abas => [
+  _CuidadorInicioTab(
+    onIrParaAba: (indice) {
+      setState(() {
+        _abaAtual = indice;
+      });
+    },
+  ),
+  const _CuidadorRemediosTab(),
+  const _CuidadorCompromissosTab(),
+  const _CuidadorChatTab(),
+  const _CuidadorPerfilTab(),
+];
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +85,11 @@ class _CuidadorHomeState extends State<CuidadorHome> {
 // ============================================================
 
 class _CuidadorInicioTab extends StatelessWidget {
-  const _CuidadorInicioTab();
+  final void Function(int indice) onIrParaAba;
+
+  const _CuidadorInicioTab({
+    required this.onIrParaAba,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +136,7 @@ class _CuidadorInicioTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Olá, Cuidador! 👋',
+                  'Olá, ${state.usuarioAtualNome.isNotEmpty ? state.usuarioAtualNome : 'Cuidador'}! 👋',                  
                   style: GoogleFonts.poppins(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -168,19 +178,21 @@ class _CuidadorInicioTab extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _ResumoCard(
-                        icon: Icons.medication_outlined,
-                        titulo: 'Remédios',
-                        valor: '${remedios.length}',
-                        descricao: 'cadastrados',
-                      ),
+                      icon: Icons.medication_outlined,
+                      titulo: 'Remédios',
+                      valor: '${remedios.length}',
+                      descricao: 'cadastrados',
+                      onTap: () => onIrParaAba(1),
+                    ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _ResumoCard(
+                        child: _ResumoCard(
                         icon: Icons.calendar_month_outlined,
                         titulo: 'Agenda',
                         valor: '${compromissos.length}',
                         descricao: 'compromissos',
+                        onTap: () => onIrParaAba(2),
                       ),
                     ),
                   ],
@@ -189,6 +201,12 @@ class _CuidadorInicioTab extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 _InformacoesSaudeCard(
+                  paciente: paciente,
+                ),
+
+                const SizedBox(height: 16),
+
+                _CuidadosIntensivosCard(
                   paciente: paciente,
                 ),
 
@@ -2141,7 +2159,9 @@ class _CuidadorPerfilTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'Cuidador',
+                      state.usuarioAtualNome.isNotEmpty
+                      ? state.usuarioAtualNome
+                      : 'Cuidador',
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -2314,17 +2334,22 @@ class _ResumoCard extends StatelessWidget {
   final String titulo;
   final String valor;
   final String descricao;
+  final VoidCallback? onTap;
 
   const _ResumoCard({
     required this.icon,
     required this.titulo,
     required this.valor,
     required this.descricao,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+return InkWell(
+  onTap: onTap,
+  borderRadius: BorderRadius.circular(16),
+  child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surface,
@@ -2368,7 +2393,8 @@ class _ResumoCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+);
   }
 }
 
@@ -3219,6 +3245,701 @@ class _PerfilInfoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CuidadosIntensivosCard extends StatelessWidget {
+  final Paciente paciente;
+
+  const _CuidadosIntensivosCard({
+    required this.paciente,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final cuidados = state.cuidados;
+
+    final hoje = DateTime.now();
+
+    final dataHoje = DateTime(
+      hoje.year,
+      hoje.month,
+      hoje.day,
+    );
+
+    final cuidadosHoje = cuidados.where((cuidado) {
+      if (cuidado.dataInicio == null ||
+          cuidado.dataFim == null) {
+        return false;
+      }
+
+      final inicio = DateTime(
+        cuidado.dataInicio!.year,
+        cuidado.dataInicio!.month,
+        cuidado.dataInicio!.day,
+      );
+
+      final fim = DateTime(
+        cuidado.dataFim!.year,
+        cuidado.dataFim!.month,
+        cuidado.dataFim!.day,
+      );
+
+      return !inicio.isAfter(dataHoje) &&
+          !fim.isBefore(dataHoje);
+    }).toList();
+
+    final proximosCuidados = cuidados.where((cuidado) {
+      if (cuidado.dataInicio == null) {
+        return false;
+      }
+
+      final inicio = DateTime(
+        cuidado.dataInicio!.year,
+        cuidado.dataInicio!.month,
+        cuidado.dataInicio!.day,
+      );
+
+      return inicio.isAfter(dataHoje);
+    }).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.health_and_safety_outlined,
+                color: AppTheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Cuidados intensivos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  _mostrarFormularioCuidado(context);
+                },
+                icon: const Icon(Icons.add),
+                tooltip: 'Adicionar cuidado',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          if (cuidados.isEmpty)
+            Text(
+              'Nenhum cuidado intensivo configurado.',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
+            )
+          else ...[
+            // ==================================================
+            // HOJE
+            // ==================================================
+            if (cuidadosHoje.isNotEmpty) ...[
+              Text(
+                'Hoje',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              ...cuidadosHoje.map(
+                (cuidado) {
+                  final concluido =
+                      cuidado.concluidoEm(dataHoje);
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+
+                    leading: Icon(
+                      concluido
+                          ? Icons.check_circle
+                          : Icons.check_circle_outline,
+                      color: concluido
+                          ? Colors.green
+                          : AppTheme.primary,
+                    ),
+
+                    title: Text(
+                      cuidado.tipo,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        decoration: concluido
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+
+                    subtitle: Text(
+                      '${cuidado.horario}'
+                      '${concluido ? ' • Feito' : ' • Pendente'}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: concluido
+                            ? Colors.green
+                            : AppTheme.textSecondary,
+                      ),
+                    ),
+
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!concluido)
+                          IconButton(
+                            onPressed: () async {
+                              await context
+                                  .read<AppState>()
+                                  .concluirCuidado(
+                                    cuidado.id,
+                                    dataHoje,
+                                  );
+                            },
+                            icon: const Icon(Icons.check),
+                            tooltip: 'Marcar como feito',
+                          ),
+
+                        PopupMenuButton<String>(
+                          onSelected: (opcao) async {
+                            if (opcao == 'editar') {
+                              _mostrarFormularioCuidado(
+                                context,
+                                cuidado: cuidado,
+                              );
+                            }
+
+                            if (opcao == 'excluir') {
+                              await context
+                                  .read<AppState>()
+                                  .removeCuidado(
+                                    cuidado.id,
+                                  );
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'editar',
+                              child: Text('Editar'),
+                            ),
+                            PopupMenuItem(
+                              value: 'excluir',
+                              child: Text('Excluir'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+
+            // ==================================================
+            // PRÓXIMOS CUIDADOS
+            // ==================================================
+            if (proximosCuidados.isNotEmpty) ...[
+              const SizedBox(height: 12),
+
+              Text(
+                'Próximos cuidados',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              ...proximosCuidados.map(
+                (cuidado) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+
+                  leading: const Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppTheme.primary,
+                  ),
+
+                  title: Text(
+                    cuidado.tipo,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  subtitle: Text(
+                    'Começa em '
+                    '${_formatarData(cuidado.dataInicio!)}'
+                    ' • ${cuidado.horario}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (opcao) async {
+                      if (opcao == 'editar') {
+                        _mostrarFormularioCuidado(
+                          context,
+                          cuidado: cuidado,
+                        );
+                      }
+
+                      if (opcao == 'excluir') {
+                        await context
+                            .read<AppState>()
+                            .removeCuidado(
+                              cuidado.id,
+                            );
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'editar',
+                        child: Text('Editar'),
+                      ),
+                      PopupMenuItem(
+                        value: 'excluir',
+                        child: Text('Excluir'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+
+          const SizedBox(height: 8),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _mostrarFormularioCuidado(context);
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar cuidado'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatarData(DateTime data) {
+    return '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year}';
+  }
+
+  void _mostrarFormularioCuidado(
+    BuildContext context, {
+    Cuidado? cuidado,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _FormularioCuidadoSheet(
+        cuidado: cuidado,
+      ),
+    );
+  }
+}
+
+class _FormularioCuidadoSheet extends StatefulWidget {
+  final Cuidado? cuidado;
+
+  const _FormularioCuidadoSheet({
+    this.cuidado,
+  });
+
+  @override
+  State<_FormularioCuidadoSheet> createState() =>
+      _FormularioCuidadoSheetState();
+}
+
+class _FormularioCuidadoSheetState
+    extends State<_FormularioCuidadoSheet> {
+  final _observacaoController = TextEditingController();
+
+String _tipoSelecionado = 'Banho e higiene';
+DateTime? _dataInicio;
+DateTime? _dataFim;
+TimeOfDay? _horario;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final cuidado = widget.cuidado;
+
+    if (cuidado != null) {
+      _tipoSelecionado = cuidado.tipo;
+
+_dataInicio = cuidado.dataInicio;
+_dataFim = cuidado.dataFim;
+
+      _observacaoController.text = cuidado.observacao;
+
+      final partes = cuidado.horario.split(':');
+
+      if (partes.length == 2) {
+        final hora = int.tryParse(partes[0]);
+
+        final minuto = int.tryParse(
+          partes[1].replaceAll(RegExp(r'[^0-9]'), ''),
+        );
+
+        if (hora != null && minuto != null) {
+          _horario = TimeOfDay(
+            hour: hora,
+            minute: minuto,
+          );
+        }
+      }
+    }
+  }
+
+  final List<String> _tipos = [
+    'Banho e higiene',
+    'Alimentação',
+    'Troca de fraldas',
+    'Fisioterapia',
+    'Hidratação',
+    'Medicação / cuidados prescritos',
+    'Acompanhamento / atividade',
+  ];
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selecionarHorario() async {
+    final horario = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (horario != null) {
+      setState(() {
+        _horario = horario;
+      });
+    }
+  }
+
+  Future<void> _selecionarDataInicio() async {
+  final data = await showDatePicker(
+    context: context,
+    initialDate: _dataInicio ?? DateTime.now(),
+    firstDate: DateTime.now(),
+    lastDate: DateTime.now().add(
+      const Duration(days: 365),
+    ),
+  );
+
+  if (data != null) {
+    setState(() {
+      _dataInicio = data;
+
+      if (_dataFim != null && _dataFim!.isBefore(data)) {
+        _dataFim = data;
+      }
+    });
+  }
+}
+
+Future<void> _selecionarDataFim() async {
+  final data = await showDatePicker(
+    context: context,
+    initialDate: _dataFim ?? _dataInicio ?? DateTime.now(),
+    firstDate: _dataInicio ?? DateTime.now(),
+    lastDate: DateTime.now().add(
+      const Duration(days: 365),
+    ),
+  );
+
+  if (data != null) {
+    setState(() {
+      _dataFim = data;
+    });
+  }
+}
+
+
+
+Future<void> _salvar() async {
+  if (_dataInicio == null || _dataFim == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Selecione a data de início e a data de fim.',
+        ),
+      ),
+    );
+    return;
+  }
+
+  if (_horario == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Selecione um horário.'),
+      ),
+    );
+    return;
+  }
+
+  final horarioFormatado = _horario!.format(context);
+    final cuidadoExistente = widget.cuidado;
+
+if (cuidadoExistente == null) {
+  final cuidado = Cuidado(
+    tipo: _tipoSelecionado,
+    horario: horarioFormatado,
+    frequencia: 'diaria',
+    dataInicio: _dataInicio,
+    dataFim: _dataFim,
+    observacao: _observacaoController.text.trim(),
+  );
+
+  await context.read<AppState>().addCuidado(cuidado);
+} else {
+      final cuidadoAtualizado = cuidadoExistente.copyWith(
+        
+  tipo: _tipoSelecionado,
+  horario: horarioFormatado,
+  frequencia: 'diaria',
+  dataInicio: _dataInicio,
+  dataFim: _dataFim,
+  observacao: _observacaoController.text.trim(),
+);
+
+      await context
+          .read<AppState>()
+          .updateCuidado(cuidadoAtualizado);
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.cuidado == null
+                  ? 'Adicionar cuidado'
+                  : 'Editar cuidado',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              'Tipo de cuidado',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            DropdownButtonFormField<String>(
+              value: _tipoSelecionado,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              items: _tipos.map(
+                (tipo) {
+                  return DropdownMenuItem(
+                    value: tipo,
+                    child: Text(tipo),
+                  );
+                },
+              ).toList(),
+              onChanged: (valor) {
+                if (valor != null) {
+                  setState(() {
+                    _tipoSelecionado = valor;
+                  });
+                }
+              },
+            ),
+
+const SizedBox(height: 16),
+
+Text(
+  'Data de início',
+  style: GoogleFonts.poppins(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+  ),
+),
+
+const SizedBox(height: 6),
+
+InkWell(
+  onTap: _selecionarDataInicio,
+  child: InputDecorator(
+    decoration: const InputDecoration(
+      border: OutlineInputBorder(),
+      suffixIcon: Icon(Icons.calendar_today_outlined),
+    ),
+    child: Text(
+      _dataInicio == null
+          ? 'Selecionar data de início'
+          : '${_dataInicio!.day.toString().padLeft(2, '0')}/'
+            '${_dataInicio!.month.toString().padLeft(2, '0')}/'
+            '${_dataInicio!.year}',
+    ),
+  ),
+),
+
+const SizedBox(height: 16),
+
+Text(
+  'Data de fim',
+  style: GoogleFonts.poppins(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+  ),
+),
+
+const SizedBox(height: 6),
+
+InkWell(
+  onTap: _selecionarDataFim,
+  child: InputDecorator(
+    decoration: const InputDecoration(
+      border: OutlineInputBorder(),
+      suffixIcon: Icon(Icons.calendar_today_outlined),
+    ),
+    child: Text(
+      _dataFim == null
+          ? 'Selecionar data de fim'
+          : '${_dataFim!.day.toString().padLeft(2, '0')}/'
+            '${_dataFim!.month.toString().padLeft(2, '0')}/'
+            '${_dataFim!.year}',
+    ),
+  ),
+),
+
+const SizedBox(height: 16),
+
+Text(
+  'Horário',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            InkWell(
+              onTap: _selecionarHorario,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.access_time),
+                ),
+                child: Text(
+                  _horario == null
+                      ? 'Selecionar horário'
+                      : _horario!.format(context),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              'Observação',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            TextField(
+              controller: _observacaoController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Ex.: exercícios conforme orientação',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _salvar,
+                child: Text(
+                  widget.cuidado == null
+                      ? 'Salvar cuidado'
+                      : 'Salvar alterações',
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

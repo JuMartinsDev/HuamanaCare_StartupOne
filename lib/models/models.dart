@@ -341,6 +341,117 @@ class Paciente {
   }
 }
 
+class Cuidado {
+  final String id;
+  final String tipo;
+  final String horario;
+  final String observacao;
+  final String frequencia;
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+  final bool ativo;
+final Map<String, bool> conclusoesPorData;
+
+  const Cuidado({
+    this.id = '',
+    required this.tipo,
+    required this.horario,
+    this.observacao = '',
+    this.frequencia = 'diaria',
+    this.dataInicio,
+    this.dataFim,
+    this.ativo = true,
+  this.conclusoesPorData = const {},
+  });
+
+  factory Cuidado.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
+    return Cuidado(
+      id: id,
+      tipo: map['tipo'] ?? '',
+      horario: map['horario'] ?? '',
+      observacao: map['observacao'] ?? '',
+      frequencia: map['frequencia'] ?? 'diaria',
+      dataInicio: _dataFromMap(map['dataInicio']),
+      dataFim: _dataFromMap(map['dataFim']),
+      ativo: map['ativo'] == true,
+conclusoesPorData: Map<String, bool>.from(
+  map['conclusoesPorData'] ?? {},
+),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'tipo': tipo,
+      'horario': horario,
+      'observacao': observacao,
+      'frequencia': frequencia,
+      'dataInicio': dataInicio?.toIso8601String(),
+      'dataFim': dataFim?.toIso8601String(),
+      'ativo': ativo,
+'conclusoesPorData': conclusoesPorData,
+    };
+  }
+
+  static DateTime? _dataFromMap(dynamic valor) {
+    if (valor is String && valor.isNotEmpty) {
+      return DateTime.tryParse(valor);
+    }
+    return null;
+  }
+
+  bool concluidoEm(DateTime data) {
+  final chave =
+      '${data.year.toString().padLeft(4, '0')}-'
+      '${data.month.toString().padLeft(2, '0')}-'
+      '${data.day.toString().padLeft(2, '0')}';
+
+  return conclusoesPorData[chave] == true;
+}
+
+Cuidado marcarConcluidoEm(DateTime data) {
+  final chave =
+      '${data.year.toString().padLeft(4, '0')}-'
+      '${data.month.toString().padLeft(2, '0')}-'
+      '${data.day.toString().padLeft(2, '0')}';
+
+  return copyWith(
+    conclusoesPorData: {
+      ...conclusoesPorData,
+      chave: true,
+    },
+  );
+}
+
+  Cuidado copyWith({
+    String? id,
+    String? tipo,
+    String? horario,
+    String? observacao,
+    String? frequencia,
+    DateTime? dataInicio,
+    DateTime? dataFim,
+    bool? ativo,
+Map<String, bool>? conclusoesPorData,
+  }) {
+    return Cuidado(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      horario: horario ?? this.horario,
+      observacao: observacao ?? this.observacao,
+      frequencia: frequencia ?? this.frequencia,
+      dataInicio: dataInicio ?? this.dataInicio,
+      dataFim: dataFim ?? this.dataFim,
+      ativo: ativo ?? this.ativo,
+conclusoesPorData:
+    conclusoesPorData ?? this.conclusoesPorData,
+    );
+  }
+}
+
 class Historico {
   final String id;
   final String tipo;
