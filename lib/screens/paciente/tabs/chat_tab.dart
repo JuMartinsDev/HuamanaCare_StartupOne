@@ -20,13 +20,13 @@ class ChatTab extends StatefulWidget {
 }
 
 class _ChatTabState extends State<ChatTab> {
-late String _canal;
+  late String _canal;
 
-@override
-void initState() {
-  super.initState();
-  _canal = widget.canalInicial;
-}
+  @override
+  void initState() {
+    super.initState();
+    _canal = widget.canalInicial;
+  }
 
   final _input = TextEditingController();
   final _scroll = ScrollController();
@@ -45,110 +45,118 @@ void initState() {
         '${t.minute.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _enviar() async {
+    final txt = _input.text.trim();
 
-Future<void> _enviar() async {
-  final txt = _input.text.trim();
-  if (txt.isEmpty) return;
+    if (txt.isEmpty) return;
 
-  final state = context.read<AppState>();
-  final idMensagemUsuario =
-      'u${DateTime.now().millisecondsSinceEpoch}';
+    final state = context.read<AppState>();
 
-  try {
-    await state.addMensagem(
-      _canal,
-      Mensagem(
-        id: idMensagemUsuario,
-        texto: txt,
-        recebido: false,
-        hora: _horaAgora(),
-      ),
-    );
-
-    _input.clear();
-    _rolarParaFim();
-
-    // Resposta automática apenas no canal Milo.
-    if (_canal != 'milo') return;
+    final idMensagemUsuario =
+        'u${DateTime.now().millisecondsSinceEpoch}';
 
     try {
-      final paciente = state.paciente;
-      final remedios = state.remedios;
-      final compromissos = state.compromissos;
-
-      // Monta o histórico sem repetir a mensagem atual.
-      final historico = <Map<String, String>>[];
-
-      final resposta = await GeminiService.enviarMensagem(
-        mensagemUsuario: txt,
-        historico: historico,
-        paciente: paciente,
-        remedios: remedios,
-        compromissos: compromissos,
-      );
-
-      debugPrint('[ChatTab] Resposta recebida: ${resposta.substring(0, resposta.length > 80 ? 80 : resposta.length)}');
-      debugPrint('[ChatTab] Canal atual: $_canal');
-
-      if (!mounted) return;
-
-      debugPrint('[ChatTab] Salvando resposta do Milo...');
-
       await state.addMensagem(
         _canal,
         Mensagem(
-          id: 'a${DateTime.now().millisecondsSinceEpoch}',
-          texto: resposta,
-          recebido: true,
+          id: idMensagemUsuario,
+          texto: txt,
+          recebido: false,
           hora: _horaAgora(),
-          isMilo: true,
-          remetente: 'Milo',
         ),
       );
 
-      debugPrint('[ChatTab] Resposta salva. Total de mensagens: ${state.mensagens(_canal).length}');
-
+      _input.clear();
       _rolarParaFim();
-    } catch (e, stackTrace) {
-      debugPrint('Erro no fluxo do Milo: $e');
-      debugPrintStack(stackTrace: stackTrace);
 
-      if (!mounted) return;
+      // Resposta automática apenas no canal Milo.
+      if (_canal != 'milo') return;
 
       try {
+        final paciente = state.paciente;
+        final remedios = state.remedios;
+        final compromissos = state.compromissos;
+
+        // Monta o histórico sem repetir a mensagem atual.
+        final historico = <Map<String, String>>[];
+
+        final resposta = await GeminiService.enviarMensagem(
+          mensagemUsuario: txt,
+          historico: historico,
+          paciente: paciente,
+          remedios: remedios,
+          compromissos: compromissos,
+        );
+
+        debugPrint(
+          '[ChatTab] Resposta recebida: '
+          '${resposta.substring(0, resposta.length > 80 ? 80 : resposta.length)}',
+        );
+
+        debugPrint('[ChatTab] Canal atual: $_canal');
+
+        if (!mounted) return;
+
+        debugPrint('[ChatTab] Salvando resposta do Milo...');
+
         await state.addMensagem(
           _canal,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
-            texto:
-                'Não foi possível obter a resposta do Milo agora. Tente novamente.',
+            texto: resposta,
             recebido: true,
             hora: _horaAgora(),
             isMilo: true,
             remetente: 'Milo',
           ),
         );
-      } catch (erroSalvar) {
+
         debugPrint(
-          'Erro ao salvar resposta do Milo: $erroSalvar',
+          '[ChatTab] Resposta salva. Total de mensagens: '
+          '${state.mensagens(_canal).length}',
         );
+
+        _rolarParaFim();
+      } catch (e, stackTrace) {
+        debugPrint('Erro no fluxo do Milo: $e');
+        debugPrintStack(stackTrace: stackTrace);
+
+        if (!mounted) return;
+
+        try {
+          await state.addMensagem(
+            _canal,
+            Mensagem(
+              id: 'a${DateTime.now().millisecondsSinceEpoch}',
+              texto:
+                  'Não foi possível obter a resposta do Milo agora. Tente novamente.',
+              recebido: true,
+              hora: _horaAgora(),
+              isMilo: true,
+              remetente: 'Milo',
+            ),
+          );
+        } catch (erroSalvar) {
+          debugPrint(
+            'Erro ao salvar resposta do Milo: $erroSalvar',
+          );
+        }
+
+        _rolarParaFim();
       }
+    } catch (e, stackTrace) {
+      debugPrint('Erro ao enviar mensagem: $e');
+      debugPrintStack(stackTrace: stackTrace);
 
-      _rolarParaFim();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível enviar a mensagem.'),
+        ),
+      );
     }
-  } catch (e, stackTrace) {
-    debugPrint('Erro ao enviar mensagem: $e');
-    debugPrintStack(stackTrace: stackTrace);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Não foi possível enviar a mensagem.'),
-      ),
-    );
   }
-}
 
   void _rolarParaFim() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -162,81 +170,229 @@ Future<void> _enviar() async {
     });
   }
 
-@override
-Widget build(BuildContext context) {
-  final msgs = context.watch<AppState>().mensagens(_canal);
+  bool _mesmoDia(Mensagem a, Mensagem b) {
+    return a.criadaEm.year == b.criadaEm.year &&
+        a.criadaEm.month == b.criadaEm.month &&
+        a.criadaEm.day == b.criadaEm.day;
+  }
 
-  for (final m in msgs) {
-    debugPrint(
-      '[ORDEM] id=${m.id} | recebido=${m.recebido} | '
-      'milo=${m.isMilo} | hora=${m.hora} | '
-      'criadaEm=${m.criadaEm} | texto=${m.texto}',
+  String _formatarData(DateTime data) {
+    return '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year}';
+  }
+
+  Widget _separadorData(DateTime data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _formatarData(data),
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-    return SafeArea(
-      child: Column(
-        children: [
-          const SizedBox(height: 14),
+  String _nomeChat(AppState state) {
+    switch (_canal) {
+      case 'cuidador':
+        final nomeCuidador = state.cuidadorNome;
 
-          Text(
-            'Chat',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+        if (nomeCuidador != null &&
+            nomeCuidador.trim().isNotEmpty) {
+          return nomeCuidador;
+        }
+
+        if (state.paciente.cuidadorNome.trim().isNotEmpty) {
+          return state.paciente.cuidadorNome;
+        }
+
+        return 'Cuidador';
+
+      case 'milo':
+        return 'Milo';
+
+      case 'familia':
+      default:
+        return 'Família';
+    }
+  }
+
+  String _subtituloChat() {
+    switch (_canal) {
+      case 'cuidador':
+        return 'Cuidador';
+
+      case 'milo':
+        return 'Assistente virtual';
+
+      case 'familia':
+      default:
+        return 'Grupo da família';
+    }
+  }
+
+  Widget _cabecalhoChat(AppState state) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0F4F1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              _canal == 'familia'
+                  ? Icons.groups_rounded
+                  : _canal == 'cuidador'
+                      ? Icons.person_rounded
+                      : Icons.smart_toy_rounded,
+              color: AppTheme.primary,
+              size: 23,
             ),
           ),
-
-          const SizedBox(height: 14),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _canalChip('Família', 'familia'),
-
-                const SizedBox(width: 8),
-
-                _canalChip('Cuidador', 'cuidador'),
-
-                const SizedBox(width: 8),
-
-                _canalChip('Milo', 'milo'),
+                Text(
+                  _nomeChat(state),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  _subtituloChat(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          Expanded(
-            child: msgs.isEmpty
-                ? Center(
-                    child: Text(
-                      'Nenhuma mensagem ainda.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: AppTheme.textLight,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(
-                      20,
-                      8,
-                      20,
-                      16,
-                    ),
-                    itemCount: msgs.length,
-                    itemBuilder: (_, i) => _Bubble(
-                      m: msgs[i],
-                    ),
-                  ),
-          ),
-
-          _barra(),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final msgs = state.mensagens(_canal);
+
+    for (final m in msgs) {
+      debugPrint(
+        '[ORDEM] id=${m.id} | recebido=${m.recebido} | '
+        'milo=${m.isMilo} | hora=${m.hora} | '
+        'criadaEm=${m.criadaEm} | texto=${m.texto}',
+      );
+    }
+
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFE7F4F2),
+              Color(0xFFF7FBFA),
+              Color(0xFFF9FBFA),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            _cabecalhoChat(state),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _canalChip('Família', 'familia'),
+                  const SizedBox(width: 8),
+                  _canalChip('Cuidador', 'cuidador'),
+                  const SizedBox(width: 8),
+                  _canalChip('Milo', 'milo'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Expanded(
+              child: msgs.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Nenhuma mensagem ainda.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: AppTheme.textLight,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        8,
+                        20,
+                        16,
+                      ),
+                      itemCount: msgs.length,
+                      itemBuilder: (_, i) {
+                        final mensagem = msgs[i];
+
+                        final mostrarData =
+                            i == 0 ||
+                            !_mesmoDia(
+                              msgs[i - 1],
+                              mensagem,
+                            );
+
+                        return Column(
+                          children: [
+                            if (mostrarData)
+                              _separadorData(
+                                mensagem.criadaEm,
+                              ),
+                            _Bubble(
+                              m: mensagem,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+
+            _barra(),
+          ],
+        ),
       ),
     );
   }
@@ -330,9 +486,7 @@ Widget build(BuildContext context) {
               ),
             ),
           ),
-
           const SizedBox(width: 8),
-
           GestureDetector(
             onTap: _enviar,
             child: Container(
@@ -367,9 +521,8 @@ class _Bubble extends StatelessWidget {
     final eu = !m.recebido;
 
     return Align(
-      alignment: eu
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
+      alignment:
+          eu ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(
           bottom: 10,
@@ -398,11 +551,9 @@ class _Bubble extends StatelessWidget {
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (m.recebido &&
-                m.remetente != null)
+            if (m.recebido && m.remetente != null)
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 2,
@@ -427,6 +578,21 @@ class _Bubble extends StatelessWidget {
                 color: eu
                     ? Colors.white
                     : AppTheme.textPrimary,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Text(
+                m.hora,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: eu
+                      ? Colors.white.withOpacity(0.75)
+                      : AppTheme.textSecondary,
+                ),
               ),
             ),
           ],

@@ -105,7 +105,7 @@ class _CuidadorInicioTab extends StatelessWidget {
         backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
-          'HumanaCare',
+          'Milo',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: AppTheme.primary,

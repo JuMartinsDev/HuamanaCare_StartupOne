@@ -123,19 +123,54 @@ class _PerfilTabState extends State<PerfilTab> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 58,
-                    height: 58,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.primary,
-                    ),
-                    child: const Icon(
-                      Icons.person_outline,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
+                  GestureDetector(
+  onTap: () async {
+    await context.read<AppState>().selecionarFotoPerfil();
+  },
+  child: Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppTheme.primary,
+          image: p.fotoPerfilUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(p.fotoPerfilUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: p.fotoPerfilUrl.isEmpty
+            ? const Icon(
+                Icons.person_outline,
+                color: Colors.white,
+                size: 30,
+              )
+            : null,
+      ),
+      Positioned(
+        right: -2,
+        bottom: -2,
+        child: Container(
+          width: 22,
+          height: 22,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppTheme.primary,
+          ),
+          child: const Icon(
+            Icons.camera_alt_outlined,
+            color: Colors.white,
+            size: 13,
+          ),
+        ),
+      ),
+    ],
+  ),
+),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(

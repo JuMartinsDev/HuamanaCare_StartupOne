@@ -25,7 +25,6 @@ class PacienteHome extends StatefulWidget {
 
 class _PacienteHomeState extends State<PacienteHome> {
   late int _aba;
-
   late final List<Widget> _telas;
 
   @override
@@ -48,16 +47,27 @@ class _PacienteHomeState extends State<PacienteHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: IndexedStack(
-        index: _aba,
-        children: _telas,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFE7F4F2),
+              Color(0xFFF7FBFA),
+              Color(0xFFF9FBFA),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: IndexedStack(
+          index: _aba,
+          children: _telas,
+        ),
       ),
       bottomNavigationBar: _BottomNav(
         aba: _aba,
         onChange: (i) {
           if (i == 4) {
-            // SOS: push para tela dedicada (não muda a aba)
             context.push('/sos');
           } else {
             setState(() => _aba = i);

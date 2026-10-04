@@ -247,7 +247,8 @@ class Paciente {
   final String cuidadorNome;
   final String cuidadorTurno;
   final String cuidadorCarga;
-
+  final String fotoPerfilUrl;
+  
   // Documentos - opcionais
   final String cpf;
   final String rgCin;
@@ -279,6 +280,7 @@ class Paciente {
     this.orgaoExpedidor = '',
     this.dataEmissaoDocumento = '',
     this.cartaoSus = '',
+    this.fotoPerfilUrl = '',
   });
 
   factory Paciente.fromMap(
@@ -308,6 +310,7 @@ class Paciente {
       orgaoExpedidor: map['orgaoExpedidor'] ?? '',
       dataEmissaoDocumento: map['dataEmissaoDocumento'] ?? '',
       cartaoSus: map['cartaoSus'] ?? '',
+      fotoPerfilUrl: map['fotoPerfilUrl'] ?? '',
     );
   }
 
@@ -336,6 +339,7 @@ class Paciente {
       'orgaoExpedidor': orgaoExpedidor,
       'dataEmissaoDocumento': dataEmissaoDocumento,
       'cartaoSus': cartaoSus,
+      'fotoPerfilUrl': fotoPerfilUrl,
     };
   }
 }

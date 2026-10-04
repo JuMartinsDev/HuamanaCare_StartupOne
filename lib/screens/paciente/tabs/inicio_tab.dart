@@ -494,11 +494,26 @@ if (medicamentoAtrasado != null) {
         )
         .map((c) => c.data!.day)
         .toSet();
+return SafeArea(
+  child: Stack(
+    children: [
+      Positioned.fill(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFE7F4F2),
+                Color(0xFFF7FBFA),
+                Color(0xFFF9FBFA),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+      ),
 
-    return SafeArea(
-    child: Stack(
-      children: [
-        SingleChildScrollView(
+      SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 90),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

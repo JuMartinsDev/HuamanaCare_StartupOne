@@ -4,12 +4,16 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/models.dart';
 
 class AppState extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ImagePicker _imagePicker = ImagePicker();
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _pacienteListener;
@@ -188,6 +192,104 @@ List<AtividadeCognitivaResultado> _resultadosAtividadesCognitivas = [];
 List<AtividadeCognitivaResultado>
     get resultadosAtividadesCognitivas =>
         List.unmodifiable(_resultadosAtividadesCognitivas);
+
+// ============================================================
+// METAS DIÁRIAS DE ATIVIDADES
+// ============================================================
+
+int _coposAguaHoje = 0;
+int _passosHoje = 0;
+int _atividadesConcluidasHoje = 0;
+
+int get coposAguaHoje => _coposAguaHoje;
+int get passosHoje => _passosHoje;
+int get atividadesConcluidasHoje =>
+    _atividadesConcluidasHoje;
+
+Future<void> _carregarMetasAtividadesHoje(
+  String pacienteId,
+) async {
+  final hoje = DateTime.now();
+
+  final chaveData =
+      '${hoje.year.toString().padLeft(4, '0')}-'
+      '${hoje.month.toString().padLeft(2, '0')}-'
+      '${hoje.day.toString().padLeft(2, '0')}';
+
+  final doc = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('metas_atividades')
+      .doc(chaveData)
+      .get();
+
+  if (!doc.exists) {
+    _coposAguaHoje = 0;
+    _passosHoje = 0;
+    _atividadesConcluidasHoje = 0;
+    return;
+  }
+
+  final dados = doc.data() ?? <String, dynamic>{};
+
+  _coposAguaHoje =
+      (dados['coposAgua'] as num?)?.toInt() ?? 0;
+
+  _passosHoje =
+      (dados['passos'] as num?)?.toInt() ?? 0;
+
+  _atividadesConcluidasHoje =
+      (dados['atividadesConcluidas'] as num?)?.toInt() ?? 0;
+}
+
+Future<void> atualizarMetasAtividades({
+  int? coposAgua,
+  int? passos,
+  int? atividadesConcluidas,
+}) async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null || pacienteId.isEmpty) {
+    throw Exception('Nenhum paciente disponível.');
+  }
+
+  final hoje = DateTime.now();
+
+  final chaveData =
+      '${hoje.year.toString().padLeft(4, '0')}-'
+      '${hoje.month.toString().padLeft(2, '0')}-'
+      '${hoje.day.toString().padLeft(2, '0')}';
+
+  if (coposAgua != null) {
+    _coposAguaHoje = coposAgua;
+  }
+
+  if (passos != null) {
+    _passosHoje = passos;
+  }
+
+  if (atividadesConcluidas != null) {
+    _atividadesConcluidasHoje =
+        atividadesConcluidas;
+  }
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('metas_atividades')
+      .doc(chaveData)
+      .set(
+    {
+      'coposAgua': _coposAguaHoje,
+      'passos': _passosHoje,
+      'atividadesConcluidas':
+          _atividadesConcluidasHoje,
+    },
+    SetOptions(merge: true),
+  );
+
+  notifyListeners();
+}
 
   // ============================================================
   // MENSAGENS
@@ -589,6 +691,8 @@ await _carregarCuidados(
 await _carregarAtividadesCognitivas(
   pacienteId,
 );
+
+await _carregarMetasAtividadesHoje(pacienteId);
   }
 
   Future<void> _carregarCuidados(String pacienteId) async {
@@ -1989,7 +2093,6 @@ Future<void> _carregarAtividadesCognitivas(
   );
 }
 
-
     String _chaveData(DateTime data) {
       return '${data.year.toString().padLeft(4, '0')}-'
           '${data.month.toString().padLeft(2, '0')}-'
@@ -2813,6 +2916,7 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
               .dataEmissaoDocumento,
       cartaoSus:
           pacienteAnterior.cartaoSus,
+      fotoPerfilUrl: pacienteAnterior.fotoPerfilUrl,
     );
 
     await _firestore
@@ -3132,6 +3236,76 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
     notifyListeners();
   }
 
+Future<void> selecionarFotoPerfil() async {
+  final pacienteId = pacienteIdDados;
+
+  if (pacienteId == null) {
+    throw Exception('Nenhum paciente disponível.');
+  }
+
+  final imagem = await _imagePicker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 80,
+    maxWidth: 800,
+  );
+
+  if (imagem == null) {
+    return;
+  }
+
+  final referencia = _storage
+      .ref()
+      .child('pacientes')
+      .child(pacienteId)
+      .child('foto_perfil.jpg');
+
+  await referencia.putData(
+    await imagem.readAsBytes(),
+    SettableMetadata(
+      contentType: 'image/jpeg',
+    ),
+  );
+
+  final url = await referencia.getDownloadURL();
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .set(
+    {
+      'fotoPerfilUrl': url,
+    },
+    SetOptions(merge: true),
+  );
+
+  _paciente = Paciente(
+    nome: _paciente.nome,
+    idade: _paciente.idade,
+    id: _paciente.id,
+    dataNascimento: _paciente.dataNascimento,
+    sexo: _paciente.sexo,
+    estadoCivil: _paciente.estadoCivil,
+    endereco: _paciente.endereco,
+    telefone: _paciente.telefone,
+    tipoSanguineo: _paciente.tipoSanguineo,
+    condicaoSaude: _paciente.condicaoSaude,
+    alergias: _paciente.alergias,
+    dispositivos: _paciente.dispositivos,
+    observacoes: _paciente.observacoes,
+    cuidadorNome: _paciente.cuidadorNome,
+    cuidadorTurno: _paciente.cuidadorTurno,
+    cuidadorCarga: _paciente.cuidadorCarga,
+    cpf: _paciente.cpf,
+    rgCin: _paciente.rgCin,
+    orgaoExpedidor: _paciente.orgaoExpedidor,
+    dataEmissaoDocumento: _paciente.dataEmissaoDocumento,
+    cartaoSus: _paciente.cartaoSus,
+    fotoPerfilUrl: url,
+  );
+
+  notifyListeners();
+}
+
   // ============================================================
   // LIMPAR DADOS DO PACIENTE
   // ============================================================
@@ -3170,6 +3344,9 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
     _historico = [];
     _historicoAtividades = [];
     _resultadosAtividadesCognitivas = [];
+    _coposAguaHoje = 0;
+    _passosHoje = 0;
+    _atividadesConcluidasHoje = 0;
     _familiaresVinculados = [];
     _cuidados = [];
 
@@ -3294,3 +3471,4 @@ DateTime? _criarDataPrevista(
     minuto,
   );
 }
+

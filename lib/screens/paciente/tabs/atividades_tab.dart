@@ -17,9 +17,11 @@ class AtividadesTab extends StatefulWidget {
 }
 
 class _AtividadesTabState extends State<AtividadesTab> {
-  int coposAgua = 0;
-  int passos = 0;
-  int atividadesConcluidas = 0;
+int coposAgua = 0;
+int passos = 0;
+int atividadesConcluidas = 0;
+
+bool _carregandoMetas = true;
 
   static const int metaAgua = 6;
   static const int metaPassos = 5000;
@@ -61,17 +63,62 @@ class _AtividadesTabState extends State<AtividadesTab> {
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
 
-    _diaAtual = _somenteData(DateTime.now());
+  _diaAtual = _somenteData(DateTime.now());
 
-    _timer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => _verificarNovoDia(),
-    );
+  final appState = context.read<AppState>();
+
+  appState.addListener(_atualizarMetasDoAppState);
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+
+    _carregarMetasDoAppState();
+  });
+
+  _timer = Timer.periodic(
+    const Duration(minutes: 1),
+    (_) => _verificarNovoDia(),
+  );
+}
+
+void _carregarMetasDoAppState() {
+  if (!mounted) return;
+
+  final appState = context.read<AppState>();
+
+  setState(() {
+    coposAgua = appState.coposAguaHoje;
+    passos = appState.passosHoje;
+    atividadesConcluidas =
+        appState.atividadesConcluidasHoje;
+    _carregandoMetas = false;
+  });
+}
+
+void _atualizarMetasDoAppState() {
+  if (!mounted) return;
+
+  final appState = context.read<AppState>();
+
+  if (coposAgua == appState.coposAguaHoje &&
+      passos == appState.passosHoje &&
+      atividadesConcluidas ==
+          appState.atividadesConcluidasHoje) {
+    return;
   }
+
+  setState(() {
+    coposAgua = appState.coposAguaHoje;
+    passos = appState.passosHoje;
+    atividadesConcluidas =
+        appState.atividadesConcluidasHoje;
+    _carregandoMetas = false;
+  });
+}
 
   DateTime _somenteData(DateTime data) {
     return DateTime(
@@ -81,14 +128,20 @@ class _AtividadesTabState extends State<AtividadesTab> {
     );
   }
 
-void _registrarAtividadeConcluida() {
+Future<void> _registrarAtividadeConcluida() async {
   _verificarNovoDia();
 
   if (!mounted) return;
 
+  final novoValor = atividadesConcluidas + 1;
+
   setState(() {
-    atividadesConcluidas++;
+    atividadesConcluidas = novoValor;
   });
+
+  await context.read<AppState>().atualizarMetasAtividades(
+        atividadesConcluidas: novoValor,
+      );
 }
 
   void _verificarNovoDia() {
@@ -104,271 +157,301 @@ void _registrarAtividadeConcluida() {
     }
   }
 
-  void _adicionarAgua() {
-    _verificarNovoDia();
+Future<void> _adicionarAgua() async {
+  _verificarNovoDia();
 
-    if (coposAgua < metaAgua) {
-      setState(() {
-        coposAgua++;
-      });
+  if (coposAgua >= metaAgua) {
+    return;
+  }
+
+  final novoValor = coposAgua + 1;
+
+  setState(() {
+    coposAgua = novoValor;
+  });
+
+  await context.read<AppState>().atualizarMetasAtividades(
+        coposAgua: novoValor,
+      );
+}
+
+Future<void> _adicionarPassos() async {
+  _verificarNovoDia();
+
+  var novoValor = passos + 500;
+
+  if (novoValor > metaPassos) {
+    novoValor = metaPassos;
+  }
+
+  setState(() {
+    passos = novoValor;
+  });
+
+  await context.read<AppState>().atualizarMetasAtividades(
+        passos: novoValor,
+      );
+}
+
+  void _abrirAtividade(
+    BuildContext context,
+    String tipo,
+  ) {
+    switch (tipo) {
+      case 'memoria':
+        showDialog(
+          context: context,
+          builder: (_) => _JogoMemoriaDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
+
+      case 'multiplicacao':
+        showDialog(
+          context: context,
+          builder: (_) => _MultiplicacaoDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
+
+      case 'sudoku':
+        showDialog(
+          context: context,
+          builder: (_) => _SudokuDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
+
+      case 'caca_palavras':
+        showDialog(
+          context: context,
+          builder: (_) => _CacaPalavrasDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
+
+      case 'quiz':
+        showDialog(
+          context: context,
+          builder: (_) => _QuizMemoriaDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
+
+      case 'palavras':
+        showDialog(
+          context: context,
+          builder: (_) => _PalavrasEmbaralhadasDialog(
+            onResultado: (resultado) async {
+              final appState = context.read<AppState>();
+
+              await appState.registrarAtividadeCognitiva(
+                resultado,
+              );
+
+              if (mounted) {
+                _registrarAtividadeConcluida();
+              }
+            },
+          ),
+        );
+        break;
     }
   }
 
-  void _adicionarPassos() {
-    _verificarNovoDia();
+@override
+void dispose() {
+  _timer?.cancel();
 
-    setState(() {
-      passos += 500;
-
-      if (passos > metaPassos) {
-        passos = metaPassos;
-      }
-    });
-  }
-
-void _abrirAtividade(
-  BuildContext context,
-  String tipo,
-) {
-  switch (tipo) {
-    case 'memoria':
-      showDialog(
-        context: context,
-        builder: (_) => _JogoMemoriaDialog(
-          onResultado: (resultado) async {
-            final appState =
-                context.read<AppState>();
-
-            await appState.registrarAtividadeCognitiva(
-              resultado,
-            );
-
-            if (mounted) {
-              _registrarAtividadeConcluida();
-            }
-          },
-        ),
+  context.read<AppState>().removeListener(
+        _atualizarMetasDoAppState,
       );
-      break;
 
-case 'multiplicacao':
-  showDialog(
-    context: context,
-    builder: (_) => _MultiplicacaoDialog(
-      onResultado: (resultado) async {
-        final appState = context.read<AppState>();
-
-        await appState.registrarAtividadeCognitiva(
-          resultado,
-        );
-
-if (mounted) {
-  _registrarAtividadeConcluida();
+  super.dispose();
 }
-      },
-    ),
-  );
-  break;
-
-case 'sudoku':
-  showDialog(
-    context: context,
-    builder: (_) => _SudokuDialog(
-      onResultado: (resultado) async {
-        final appState = context.read<AppState>();
-
-        await appState.registrarAtividadeCognitiva(
-          resultado,
-        );
-
-if (mounted) {
-  _registrarAtividadeConcluida();
-}
-      },
-    ),
-  );
-  break;
-
-case 'caca_palavras':
-  showDialog(
-    context: context,
-    builder: (_) => _CacaPalavrasDialog(
-      onResultado: (resultado) async {
-        final appState = context.read<AppState>();
-
-        await appState.registrarAtividadeCognitiva(
-          resultado,
-        );
-
-if (mounted) {
-  _registrarAtividadeConcluida();
-}
-      },
-    ),
-  );
-  break;
-
-case 'quiz':
-  showDialog(
-    context: context,
-    builder: (_) => _QuizMemoriaDialog(
-      onResultado: (resultado) async {
-        final appState = context.read<AppState>();
-
-        await appState.registrarAtividadeCognitiva(
-          resultado,
-        );
-
- if (mounted) {
-  _registrarAtividadeConcluida();
-}
-      },
-    ),
-  );
-  break;
-
-case 'palavras':
-  showDialog(
-    context: context,
-    builder: (_) => _PalavrasEmbaralhadasDialog(
-      onResultado: (resultado) async {
-        final appState = context.read<AppState>();
-
-        await appState.registrarAtividadeCognitiva(
-          resultado,
-        );
-
- if (mounted) {
-  _registrarAtividadeConcluida();
-}
-      },
-    ),
-  );
-  break;
-
-  }
-}
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Atividades',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFFE7F4F2),
+            Color(0xFFF7FBFA),
+            Color(0xFFF9FBFA),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Atividades',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Exercite a memória e mantenha a mente ativa.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.black54,
+            const SizedBox(height: 5),
+            Text(
+              'Exercite a memória e mantenha a mente ativa.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _atividades.length,
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.15,
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _atividades.length,
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.25,
+              ),
+              itemBuilder: (context, index) {
+                final atividade = _atividades[index];
+
+                return _AtividadeCard(
+                  label: atividade['label']!,
+                  icon: atividade['icon']!,
+                  onTap: () => _abrirAtividade(
+                    context,
+                    atividade['tipo']!,
+                  ),
+                );
+              },
             ),
-            itemBuilder: (context, index) {
-              final atividade = _atividades[index];
 
-              return _AtividadeCard(
-                label: atividade['label']!,
-                icon: atividade['icon']!,
-                onTap: () => _abrirAtividade(
-                  context,
-                  atividade['tipo']!,
-                ),
-              );
-            },
-          ),
+            const SizedBox(height: 28),
 
-          const SizedBox(height: 28),
-
-          Text(
-            'Minhas metas',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+            Text(
+              'Minhas metas',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Acompanhe pequenas metas do seu dia.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.black54,
+            const SizedBox(height: 5),
+            Text(
+              'Acompanhe pequenas metas do seu dia.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          _MetaCard(
-            icon: '💧',
-            title: 'Água',
-            value: '$coposAgua / $metaAgua copos',
-            progress: coposAgua / metaAgua,
-            buttonLabel:
-                coposAgua >= metaAgua ? 'Concluída' : '+ 1 copo',
-            onPressed:
-                coposAgua >= metaAgua ? null : _adicionarAgua,
-          ),
+            _MetaCard(
+              icon: '💧',
+              title: 'Água',
+              value: '$coposAgua / $metaAgua copos',
+              progress: coposAgua / metaAgua,
+              buttonLabel:
+                  coposAgua >= metaAgua ? 'Concluída' : '+ 1 copo',
+              onPressed:
+                  coposAgua >= metaAgua ? null : _adicionarAgua,
+            ),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          _MetaCard(
-            icon: '🚶',
-            title: 'Caminhada',
-            value: '$passos / $metaPassos passos',
-            progress: passos / metaPassos,
-            buttonLabel:
-                passos >= metaPassos ? 'Concluída' : '+ 500',
-            onPressed:
-                passos >= metaPassos ? null : _adicionarPassos,
-          ),
+            _MetaCard(
+              icon: '🚶',
+              title: 'Caminhada',
+              value: '$passos / $metaPassos passos',
+              progress: passos / metaPassos,
+              buttonLabel:
+                  passos >= metaPassos ? 'Concluída' : '+ 500',
+              onPressed:
+                  passos >= metaPassos ? null : _adicionarPassos,
+            ),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          _MetaCard(
-            icon: '🎯',
-            title: 'Atividades',
-value:
-    '${min(atividadesConcluidas, metaAtividades)} / $metaAtividades hoje',
-progress:
-    atividadesConcluidas / metaAtividades,
-            buttonLabel:
-                atividadesConcluidas >= metaAtividades
-                    ? 'Concluída'
-                    : 'Automática',
-            onPressed: null,
-          ),
-        ],
+            _MetaCard(
+              icon: '🎯',
+              title: 'Atividades',
+              value:
+                  '${min(atividadesConcluidas, metaAtividades)} / $metaAtividades hoje',
+              progress:
+                  atividadesConcluidas / metaAtividades,
+              buttonLabel:
+                  atividadesConcluidas >= metaAtividades
+                      ? 'Concluída'
+                      : 'Automática',
+              onPressed: null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -397,7 +480,7 @@ class _AtividadeCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.all(13),
+          padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
             color: AppTheme.primary.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(18),
@@ -409,8 +492,8 @@ class _AtividadeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(13),
