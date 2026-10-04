@@ -295,17 +295,165 @@ Future<void> atualizarMetasAtividades({
   // MENSAGENS
   // ============================================================
 
-  final Map<String, List<Mensagem>> _msgs = {
-    'familia': [],
-    'cuidador': [],
-    'milo': [],
-  };
+final Map<String, List<Mensagem>> _msgs = {};
 
   List<Mensagem> mensagens(String canal) {
     return List.unmodifiable(
       _msgs[canal] ?? [],
     );
   }
+
+  String get canalFamilia => 'familia';
+
+String get canalCuidadorPaciente =>
+    'cuidador_paciente';
+
+String canalCuidadorFamiliar(
+  String familiarUid,
+) {
+  return 'cuidador_familiar_$familiarUid';
+}
+
+String canalPacienteFamiliar(
+  String familiarUid,
+) {
+  return 'paciente_familiar_$familiarUid';
+}
+
+String canalMilo(String usuarioUid) {
+  return 'milo_$usuarioUid';
+}
+
+String? get canalCuidadorUsuarioAtual {
+  final uid = usuarioAtualId;
+
+  if (uid == null || uid.isEmpty) {
+    return null;
+  }
+
+  if (_perfil == 'paciente') {
+    return canalCuidadorPaciente;
+  }
+
+  if (_perfil == 'familiar') {
+    return canalCuidadorFamiliar(uid);
+  }
+
+  return null;
+}
+
+String? get canalPacienteFamiliarUsuarioAtual {
+  final uid = usuarioAtualId;
+
+  if (uid == null || uid.isEmpty) {
+    return null;
+  }
+
+  // No perfil Familiar:
+  // usa o próprio UID do familiar.
+  if (_perfil == 'familiar') {
+    return canalPacienteFamiliar(uid);
+  }
+
+  // No perfil Paciente:
+  // descobre qual familiar está vinculado.
+  if (_perfil == 'paciente' &&
+      _familiaresVinculados.isNotEmpty) {
+    final familiarUid =
+        _familiaresVinculados.first['uid'] ?? '';
+
+    if (familiarUid.isNotEmpty) {
+      return canalPacienteFamiliar(
+        familiarUid,
+      );
+    }
+  }
+
+  return null;
+}
+
+String? get canalMiloUsuarioAtual {
+  final uid = usuarioAtualId;
+
+  if (uid == null || uid.isEmpty) {
+    return null;
+  }
+
+  return canalMilo(uid);
+}
+
+List<String> _canaisDoUsuarioAtual() {
+  final canais = <String>[
+    canalFamilia,
+  ];
+
+  final uid = usuarioAtualId;
+
+  if (uid == null || uid.isEmpty) {
+    return canais;
+  }
+
+  // Milo é individual para cada usuário.
+  canais.add(
+    canalMilo(uid),
+  );
+
+if (_perfil == 'paciente') {
+  canais.add(
+    canalCuidadorPaciente,
+  );
+
+  // Conversa privada com cada familiar.
+  for (final familiar
+      in _familiaresVinculados) {
+    final familiarUid =
+        familiar['uid'] ?? '';
+
+    if (familiarUid.isNotEmpty) {
+      canais.add(
+        canalPacienteFamiliar(
+          familiarUid,
+        ),
+      );
+    }
+  }
+}
+
+if (_perfil == 'familiar') {
+  // Familiar <-> Cuidador
+  canais.add(
+    canalCuidadorFamiliar(uid),
+  );
+
+  // Familiar <-> Paciente
+  canais.add(
+    canalPacienteFamiliar(uid),
+  );
+}
+
+  if (_perfil == 'cuidador') {
+    // Conversa privada cuidador <-> paciente.
+    canais.add(
+      canalCuidadorPaciente,
+    );
+
+    // Uma conversa privada para cada familiar.
+    for (final familiar in _familiaresVinculados) {
+      final familiarUid =
+          familiar['uid'] ?? '';
+
+      if (familiarUid.isNotEmpty) {
+        canais.add(
+          canalCuidadorFamiliar(
+            familiarUid,
+          ),
+        );
+      }
+    }
+  }
+
+  return canais.toSet().toList();
+}
 
   // ============================================================
   // SOS
@@ -2279,68 +2427,64 @@ Future<void> registrarAtividadeCognitiva(
 
   // Carrega as mensagens inicialmente e
   // inicia listeners em tempo real.
-  Future<void> _carregarMensagensFirestore() async {
-    final pacienteId =
-        pacienteIdDados;
+ Future<void> _carregarMensagensFirestore() async {
+  final pacienteId = pacienteIdDados;
 
-    await _cancelarListenersMensagens();
+  await _cancelarListenersMensagens();
 
-    if (pacienteId == null ||
-        pacienteId.isEmpty) {
-      _msgs['familia'] = [];
-      _msgs['cuidador'] = [];
-      _msgs['milo'] = [];
-      return;
-    }
+  _msgs.clear();
 
-    const canais = [
-      'familia',
-      'cuidador',
-      'milo',
-    ];
+  if (pacienteId == null ||
+      pacienteId.isEmpty) {
+    notifyListeners();
+    return;
+  }
 
-    for (final canal in canais) {
-      final snapshot =
-          await _firestore
-              .collection('pacientes')
-              .doc(pacienteId)
-              .collection('canais')
-              .doc(canal)
-              .collection('mensagens')
-              .get();
+  final canais = _canaisDoUsuarioAtual();
 
-        final mensagensCarregadas =
-            snapshot.docs
-                .map(
-                  (doc) {
-                    final mensagem =
-                        Mensagem.fromMap(
-                      doc.id,
-                      doc.data(),
-                    );
+  for (final canal in canais) {
+    final snapshot = await _firestore
+        .collection('pacientes')
+        .doc(pacienteId)
+        .collection('canais')
+        .doc(canal)
+        .collection('mensagens')
+        .get();
 
-                    return _mensagemParaUsuarioAtual(
-                      canal,
-                      mensagem,
-                    );
-                  },
-                )
-                .toList();
-
-        mensagensCarregadas.sort(
-          (a, b) => a.criadaEm.compareTo(b.criadaEm),
+    final mensagensCarregadas =
+        snapshot.docs.map(
+      (doc) {
+        final mensagem =
+            Mensagem.fromMap(
+          doc.id,
+          doc.data(),
         );
 
-        _msgs[canal] = mensagensCarregadas;
+        return _mensagemParaUsuarioAtual(
+          canal,
+          mensagem,
+        );
+      },
+    ).toList();
 
-      _iniciarListenerMensagens(
-        pacienteId,
-        canal,
-      );
-    }
+    mensagensCarregadas.sort(
+      (a, b) =>
+          a.criadaEm.compareTo(
+        b.criadaEm,
+      ),
+    );
 
-    notifyListeners();
+    _msgs[canal] =
+        mensagensCarregadas;
+
+    _iniciarListenerMensagens(
+      pacienteId,
+      canal,
+    );
   }
+
+  notifyListeners();
+}
 
   // Listener em tempo real de um canal.
   void _iniciarListenerMensagens(
@@ -2414,17 +2558,24 @@ Future<void> registrarAtividadeCognitiva(
       );
     }
 
-    const canaisValidos = [
-      'familia',
-      'cuidador',
-      'milo',
-    ];
+final canalValido =
+    canal == 'familia' ||
+    canal == 'cuidador_paciente' ||
+    canal.startsWith(
+      'cuidador_familiar_',
+    ) ||
+    canal.startsWith(
+      'paciente_familiar_',
+    ) ||
+    canal.startsWith(
+      'milo_',
+    );
 
-    if (!canaisValidos.contains(canal)) {
-      throw Exception(
-        'Canal de mensagem inválido.',
-      );
-    }
+if (!canalValido) {
+  throw Exception(
+    'Canal de mensagem inválido: $canal',
+  );
+}
 
     final mensagemParaSalvar =
         _prepararMensagemParaEnvio(
@@ -2506,22 +2657,21 @@ Future<void> registrarAtividadeCognitiva(
 
   String? _sosEventoId;
 
- Future<void> acionarSos() async {
+Future<void> acionarSos() async {
   _sosAtivado = true;
   _sosStatus = 'acionado';
   _sosDataHora = DateTime.now();
-
   notifyListeners();
 
-  final user = _auth.currentUser;
+  final pacienteId = pacienteIdDados;
 
-  if (user == null) {
+  if (pacienteId == null || pacienteId.isEmpty) {
     return;
   }
 
   final docRef = await _firestore
       .collection('pacientes')
-      .doc(user.uid)
+      .doc(pacienteId)
       .collection('sos_eventos')
       .add({
     'dataHora': FieldValue.serverTimestamp(),

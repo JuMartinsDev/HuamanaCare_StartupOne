@@ -391,6 +391,13 @@ void dispose() {
 
             const SizedBox(height: 28),
 
+            _DesempenhoCognitivoCard(
+              resultados:
+                  context.watch<AppState>().resultadosAtividadesCognitivas,
+            ),
+
+            const SizedBox(height: 28),
+
             Text(
               'Minhas metas',
               textAlign: TextAlign.center,
@@ -452,6 +459,523 @@ void dispose() {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+// ============================================================
+// DESEMPENHO COGNITIVO
+// ============================================================
+
+class _DesempenhoCognitivoCard extends StatelessWidget {
+  final List<AtividadeCognitivaResultado> resultados;
+
+  const _DesempenhoCognitivoCard({
+    required this.resultados,
+  });
+
+  bool _mesmoDia(
+    DateTime a,
+    DateTime b,
+  ) {
+    return a.year == b.year &&
+        a.month == b.month &&
+        a.day == b.day;
+  }
+
+  String _formatarTempo(int segundos) {
+    if (segundos < 60) {
+      return '${segundos}s';
+    }
+
+    final minutos = segundos ~/ 60;
+    final resto = segundos % 60;
+
+    return resto == 0
+        ? '${minutos}min'
+        : '${minutos}min ${resto}s';
+  }
+
+  String _formatarHorario(DateTime data) {
+    final hora =
+        data.hour.toString().padLeft(2, '0');
+    final minuto =
+        data.minute.toString().padLeft(2, '0');
+
+    return '$hora:$minuto';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agora = DateTime.now();
+
+    final resultadosHoje = resultados
+        .where(
+          (resultado) =>
+              _mesmoDia(
+            resultado.data,
+            agora,
+          ),
+        )
+        .toList()
+      ..sort(
+        (a, b) =>
+            b.data.compareTo(a.data),
+      );
+
+    final mediaHoje =
+        resultadosHoje.isEmpty
+            ? 0
+            : (resultadosHoje
+                        .map(
+                          (resultado) =>
+                              resultado
+                                  .pontuacao,
+                        )
+                        .reduce(
+                          (a, b) =>
+                              a + b,
+                        ) /
+                    resultadosHoje.length)
+                .round();
+
+    final recentes =
+        resultadosHoje.take(3).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.primary
+              .withValues(
+            alpha: 0.12,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withValues(
+              alpha: 0.03,
+            ),
+            blurRadius: 10,
+            offset:
+                const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration:
+                    BoxDecoration(
+                  color: AppTheme.primary
+                      .withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.psychology_outlined,
+                  color: AppTheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      'Desempenho cognitivo',
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight:
+                            FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      'Resultados das atividades realizadas hoje.',
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 10,
+                        color:
+                            Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                child:
+                    _CognitivoResumoItem(
+                  titulo: 'Atividades',
+                  valor:
+                      '${resultadosHoje.length}',
+                  subtitulo:
+                      resultadosHoje.length ==
+                              1
+                          ? 'realizada hoje'
+                          : 'realizadas hoje',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child:
+                    _CognitivoResumoItem(
+                  titulo: 'Média',
+                  valor:
+                      resultadosHoje.isEmpty
+                          ? '--'
+                          : '$mediaHoje%',
+                  subtitulo:
+                      'pontuação de hoje',
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          if (recentes.isEmpty)
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.all(
+                14,
+              ),
+              decoration:
+                  BoxDecoration(
+                color: AppTheme.primary
+                    .withValues(
+                  alpha: 0.05,
+                ),
+                borderRadius:
+                    BorderRadius.circular(
+                  12,
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons
+                        .psychology_alt_outlined,
+                    size: 28,
+                    color:
+                        AppTheme.primary,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nenhuma atividade cognitiva realizada hoje.',
+                    textAlign:
+                        TextAlign.center,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 11,
+                      color:
+                          Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Escolha um dos jogos acima para começar.',
+                    textAlign:
+                        TextAlign.center,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 9,
+                      color:
+                          Colors.black45,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            Text(
+              'Últimos resultados',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight:
+                    FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 9),
+            ...recentes.map(
+              (resultado) =>
+                  _ResultadoCognitivoItem(
+                resultado: resultado,
+                horario:
+                    _formatarHorario(
+                  resultado.data,
+                ),
+                tempo:
+                    _formatarTempo(
+                  resultado
+                      .tempoSegundos,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CognitivoResumoItem
+    extends StatelessWidget {
+  final String titulo;
+  final String valor;
+  final String subtitulo;
+
+  const _CognitivoResumoItem({
+    required this.titulo,
+    required this.valor,
+    required this.subtitulo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding:
+          const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primary
+            .withValues(
+          alpha: 0.06,
+        ),
+        borderRadius:
+            BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style:
+                GoogleFonts.poppins(
+              fontSize: 9,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            valor,
+            style:
+                GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight:
+                  FontWeight.w700,
+              color:
+                  AppTheme.primary,
+            ),
+          ),
+          Text(
+            subtitulo,
+            style:
+                GoogleFonts.poppins(
+              fontSize: 8.5,
+              color: Colors.black45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultadoCognitivoItem
+    extends StatelessWidget {
+  final AtividadeCognitivaResultado
+      resultado;
+  final String horario;
+  final String tempo;
+
+  const _ResultadoCognitivoItem({
+    required this.resultado,
+    required this.horario,
+    required this.tempo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pontuacao =
+        resultado.pontuacao;
+
+    final String desempenho;
+    final IconData icone;
+
+    if (pontuacao >= 80) {
+      desempenho =
+          'Bom desempenho';
+      icone =
+          Icons.trending_up_rounded;
+    } else if (pontuacao >= 60) {
+      desempenho =
+          'Desempenho estável';
+      icone =
+          Icons.trending_flat_rounded;
+    } else {
+      desempenho =
+          'Acompanhar evolução';
+      icone =
+          Icons.trending_down_rounded;
+    }
+
+    return Container(
+      margin:
+          const EdgeInsets.only(
+        bottom: 8,
+      ),
+      padding:
+          const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color:
+            AppTheme.background,
+        borderRadius:
+            BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration:
+                BoxDecoration(
+              color: AppTheme.primary
+                  .withValues(
+                alpha: 0.10,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                10,
+              ),
+            ),
+            child: const Icon(
+              Icons
+                  .extension_outlined,
+              size: 18,
+              color:
+                  AppTheme.primary,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        resultado.titulo,
+                        maxLines: 1,
+                        overflow:
+                            TextOverflow
+                                .ellipsis,
+                        style: GoogleFonts
+                            .poppins(
+                          fontSize: 11,
+                          fontWeight:
+                              FontWeight
+                                  .w600,
+                          color: Colors
+                              .black87,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 6,
+                    ),
+                    Text(
+                      '${resultado.pontuacao}%',
+                      style: GoogleFonts
+                          .poppins(
+                        fontSize: 12,
+                        fontWeight:
+                            FontWeight
+                                .w700,
+                        color: AppTheme
+                            .primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${resultado.acertos} acertos • '
+                  '${resultado.erros} erros • $tempo',
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 9,
+                    color:
+                        Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      icone,
+                      size: 13,
+                      color: AppTheme
+                          .primary,
+                    ),
+                    const SizedBox(
+                      width: 4,
+                    ),
+                    Expanded(
+                      child: Text(
+                        '$desempenho • $horario',
+                        style: GoogleFonts
+                            .poppins(
+                          fontSize: 8.5,
+                          fontWeight:
+                              FontWeight
+                                  .w500,
+                          color: AppTheme
+                              .primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -18,19 +18,19 @@ class CuidadorHome extends StatefulWidget {
 class _CuidadorHomeState extends State<CuidadorHome> {
   int _abaAtual = 0;
 
-List<Widget> get _abas => [
-  _CuidadorInicioTab(
-    onIrParaAba: (indice) {
-      setState(() {
-        _abaAtual = indice;
-      });
-    },
-  ),
-  const _CuidadorRemediosTab(),
-  const _CuidadorCompromissosTab(),
-  const _CuidadorChatTab(),
-  const _CuidadorPerfilTab(),
-];
+  List<Widget> get _abas => [
+        _CuidadorInicioTab(
+          onIrParaAba: (indice) {
+            setState(() {
+              _abaAtual = indice;
+            });
+          },
+        ),
+        const _CuidadorRemediosTab(),
+        const _CuidadorCompromissosTab(),
+        const _CuidadorChatTab(),
+        const _CuidadorPerfilTab(),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -125,137 +125,129 @@ class _CuidadorInicioTab extends StatelessWidget {
           ),
         ],
       ),
-body: SafeArea(
-  child: Container(
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          Color(0xFFE7F4F2),
-          Color(0xFFF7FBFA),
-          Color(0xFFF9FBFA),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ),
-    ),
-    child: RefreshIndicator(
-          onRefresh: () async {
-            await context.read<AppState>().inicializar();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Olá, ${state.usuarioAtualNome.isNotEmpty ? state.usuarioAtualNome : 'Cuidador'}! 👋',                  
-                  style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  paciente.nome.isEmpty
-                      ? 'Acompanhe o cuidado do paciente.'
-                      : 'Acompanhe o cuidado de ${paciente.nome}.',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 26),
-
-                _PacienteResumoCard(
-                  paciente: paciente,
-                  onTap: () {
-                    _mostrarDadosPaciente(context, paciente);
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'Resumo de saúde',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ResumoCard(
-                      icon: Icons.medication_outlined,
-                      titulo: 'Remédios',
-                      valor: '${remedios.length}',
-                      descricao: 'cadastrados',
-                      onTap: () => onIrParaAba(1),
-                    ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: _ResumoCard(
-                        icon: Icons.calendar_month_outlined,
-                        titulo: 'Agenda',
-                        valor: '${compromissos.length}',
-                        descricao: 'compromissos',
-                        onTap: () => onIrParaAba(2),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                _InformacoesSaudeCard(
-                  paciente: paciente,
-                ),
-
-                const SizedBox(height: 16),
-
-                _CuidadosIntensivosCard(
-                  paciente: paciente,
-                ),
-
-                const SizedBox(height: 20),
-                const _TimelineCuidador(),
-
-                const SizedBox(height: 20),
-                const _HistoricoAcompanhamentoCard(),
-
-                const SizedBox(height: 20),
-                const _AcompanhamentoCognitivoCard(),
-
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'Emergência',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-_SosCard(
-  ativado: state.sosAtivado,
-  status: state.sosStatus,
-  dataHora: state.sosDataHora,
-),
+      body: SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFFE7F4F2),
+                Color(0xFFF7FBFA),
+                Color(0xFFF9FBFA),
               ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await context.read<AppState>().inicializar();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Olá, ${state.usuarioAtualNome.isNotEmpty ? state.usuarioAtualNome : 'Cuidador'}! 👋',
+                    style: GoogleFonts.poppins(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    paciente.nome.isEmpty
+                        ? 'Acompanhe o cuidado do paciente.'
+                        : 'Acompanhe o cuidado de ${paciente.nome}.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  _PacienteResumoCard(
+                    paciente: paciente,
+                    onTap: () {
+                      _mostrarDadosPaciente(context, paciente);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Resumo de saúde',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ResumoCard(
+                          icon: Icons.medication_outlined,
+                          titulo: 'Remédios',
+                          valor: '${remedios.length}',
+                          descricao: 'cadastrados',
+                          onTap: () => onIrParaAba(1),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ResumoCard(
+                          icon: Icons.calendar_month_outlined,
+                          titulo: 'Agenda',
+                          valor: '${compromissos.length}',
+                          descricao: 'compromissos',
+                          onTap: () => onIrParaAba(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _AlertasCuidadorCard(
+  onAbrirRemedios: () => onIrParaAba(1),
+  onAbrirAgenda: () => onIrParaAba(2),
+),
+
+const SizedBox(height: 20),
+
+                  _InformacoesSaudeCard(
+                    paciente: paciente,
+                  ),
+                  const SizedBox(height: 16),
+                  _CuidadosIntensivosCard(
+                    paciente: paciente,
+                  ),
+                  const SizedBox(height: 20),
+                  const _TimelineCuidador(),
+                  const SizedBox(height: 20),
+                  const _HistoricoAcompanhamentoCard(),
+                  const SizedBox(height: 20),
+                  const _AcompanhamentoCognitivoCard(),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Emergência',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _SosCard(
+                    ativado: state.sosAtivado,
+                    status: state.sosStatus,
+                    dataHora: state.sosDataHora,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-),
     );
   }
 
@@ -266,12 +258,395 @@ _SosCard(
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor:  const Color(0xFFE7F4F2),
+      backgroundColor: const Color(0xFFE7F4F2),
       builder: (context) {
         return _DadosPacienteSheet(
           paciente: paciente,
         );
       },
+    );
+  }
+}
+
+class _AlertasCuidadorCard extends StatelessWidget {
+  final VoidCallback onAbrirRemedios;
+  final VoidCallback onAbrirAgenda;
+
+  const _AlertasCuidadorCard({
+    required this.onAbrirRemedios,
+    required this.onAbrirAgenda,
+  });
+
+  int _horarioEmMinutos(String horario) {
+    final partes = horario.split(':');
+
+    if (partes.length != 2) {
+      return 9999;
+    }
+
+    final hora = int.tryParse(partes[0]);
+    final minuto = int.tryParse(partes[1]);
+
+    if (hora == null || minuto == null) {
+      return 9999;
+    }
+
+    return hora * 60 + minuto;
+  }
+
+  DateTime _semHorario(DateTime data) {
+    return DateTime(
+      data.year,
+      data.month,
+      data.day,
+    );
+  }
+
+  bool _mesmoDia(
+    DateTime a,
+    DateTime b,
+  ) {
+    return a.year == b.year &&
+        a.month == b.month &&
+        a.day == b.day;
+  }
+
+  bool _estaNoPeriodo(
+    DateTime hoje,
+    DateTime? inicio,
+    DateTime? fim,
+  ) {
+    final data = _semHorario(hoje);
+
+    if (inicio != null &&
+        _semHorario(inicio).isAfter(data)) {
+      return false;
+    }
+
+    if (fim != null &&
+        _semHorario(fim).isBefore(data)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+
+    final agora = DateTime.now();
+    final minutosAgora =
+        agora.hour * 60 + agora.minute;
+
+    final alertas = <_AlertaCuidadorItem>[];
+
+    // ============================================================
+    // MEDICAMENTOS ATRASADOS
+    // ============================================================
+
+    for (final remedio in state.remedios) {
+      if (!_estaNoPeriodo(
+        agora,
+        remedio.dataInicio,
+        remedio.dataFim,
+      )) {
+        continue;
+      }
+
+      if (remedio.tomado) {
+        continue;
+      }
+
+      final minutos =
+          _horarioEmMinutos(remedio.horario);
+
+      if (minutos != 9999 &&
+          minutos < minutosAgora) {
+        alertas.add(
+          _AlertaCuidadorItem(
+            titulo:
+                '${remedio.nome} ainda não foi registrado',
+            descricao:
+                'Horário previsto: ${remedio.horario}',
+            icon: Icons.medication_outlined,
+            cor: Colors.orange,
+            onTap: onAbrirRemedios,
+          ),
+        );
+      }
+    }
+
+    // ============================================================
+    // COMPROMISSOS
+    // ============================================================
+
+    for (final compromisso
+        in state.compromissos) {
+      final data = compromisso.data;
+
+      if (data == null ||
+          !_mesmoDia(data, agora) ||
+          compromisso.status == 'cancelado' ||
+          compromisso.status == 'concluido') {
+        continue;
+      }
+
+      final minutos =
+          _horarioEmMinutos(
+        compromisso.horario,
+      );
+
+      if (minutos == 9999) {
+        continue;
+      }
+
+      final diferenca =
+          minutos - minutosAgora;
+
+      if (diferenca < 0) {
+        alertas.add(
+          _AlertaCuidadorItem(
+            titulo:
+                'Compromisso possivelmente perdido',
+            descricao:
+                '${compromisso.titulo} • ${compromisso.horario}',
+            icon:
+                Icons.event_busy_outlined,
+            cor: Colors.redAccent,
+            onTap: onAbrirAgenda,
+          ),
+        );
+      } else if (diferenca <= 120) {
+        alertas.add(
+          _AlertaCuidadorItem(
+            titulo:
+                'Compromisso próximo',
+            descricao:
+                '${compromisso.titulo} • ${compromisso.horario}',
+            icon:
+                Icons.event_outlined,
+            cor: AppTheme.primary,
+            onTap: onAbrirAgenda,
+          ),
+        );
+      }
+    }
+
+    // ============================================================
+    // CUIDADOS INTENSIVOS ATRASADOS
+    // ============================================================
+
+    for (final cuidado in state.cuidados) {
+      if (!cuidado.ativo ||
+          !_estaNoPeriodo(
+            agora,
+            cuidado.dataInicio,
+            cuidado.dataFim,
+          ) ||
+          cuidado.concluidoEm(agora)) {
+        continue;
+      }
+
+      final minutos =
+          _horarioEmMinutos(
+        cuidado.horario,
+      );
+
+      if (minutos != 9999 &&
+          minutos < minutosAgora) {
+        alertas.add(
+          _AlertaCuidadorItem(
+            titulo:
+                'Cuidado pendente',
+            descricao:
+                '${cuidado.tipo} • ${cuidado.horario}',
+            icon:
+                Icons.health_and_safety_outlined,
+            cor: Colors.orange,
+          ),
+        );
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius:
+            BorderRadius.circular(18),
+        border: Border.all(
+          color: alertas.isEmpty
+              ? Colors.green.shade200
+              : Colors.orange.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: alertas.isEmpty
+                      ? Colors.green.withOpacity(
+                          0.10,
+                        )
+                      : Colors.orange.withOpacity(
+                          0.10,
+                        ),
+                  borderRadius:
+                      BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  alertas.isEmpty
+                      ? Icons
+                          .check_circle_outline
+                      : Icons
+                          .notifications_active_outlined,
+                  color: alertas.isEmpty
+                      ? Colors.green
+                      : Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Atenção de hoje',
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight:
+                            FontWeight.w600,
+                        color:
+                            AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      alertas.isEmpty
+                          ? 'Nenhuma situação exige atenção agora.'
+                          : '${alertas.length} ${alertas.length == 1 ? 'situação precisa' : 'situações precisam'} de atenção.',
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme
+                            .textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (alertas.isNotEmpty) ...[
+            const SizedBox(height: 14),
+
+            ...alertas.take(4).map(
+                  (alerta) =>
+                      _AlertaCuidadorLinha(
+                    alerta: alerta,
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertaCuidadorItem {
+  final String titulo;
+  final String descricao;
+  final IconData icon;
+  final Color cor;
+  final VoidCallback? onTap;
+
+  const _AlertaCuidadorItem({
+    required this.titulo,
+    required this.descricao,
+    required this.icon,
+    required this.cor,
+    this.onTap,
+  });
+}
+
+class _AlertaCuidadorLinha
+    extends StatelessWidget {
+  final _AlertaCuidadorItem alerta;
+
+  const _AlertaCuidadorLinha({
+    required this.alerta,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: alerta.onTap,
+      borderRadius:
+          BorderRadius.circular(12),
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(
+          vertical: 8,
+        ),
+        child: Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Icon(
+              alerta.icon,
+              size: 19,
+              color: alerta.cor,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    alerta.titulo,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight:
+                          FontWeight.w600,
+                      color:
+                          AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    alerta.descricao,
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 10,
+                      color:
+                          AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (alerta.onTap != null)
+              const Icon(
+                Icons.chevron_right,
+                size: 19,
+                color:
+                    AppTheme.textSecondary,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -284,8 +659,7 @@ class _TimelineCuidador extends StatefulWidget {
   const _TimelineCuidador();
 
   @override
-  State<_TimelineCuidador> createState() =>
-      _TimelineCuidadorState();
+  State<_TimelineCuidador> createState() => _TimelineCuidadorState();
 }
 
 class _TimelineCuidadorState extends State<_TimelineCuidador> {
@@ -320,11 +694,10 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
   ) {
     final data = _dataSemHorario(dia);
 
-    final inicioValido = inicio == null ||
-        !_dataSemHorario(inicio).isAfter(data);
+    final inicioValido =
+        inicio == null || !_dataSemHorario(inicio).isAfter(data);
 
-    final fimValido = fim == null ||
-        !_dataSemHorario(fim).isBefore(data);
+    final fimValido = fim == null || !_dataSemHorario(fim).isBefore(data);
 
     return inicioValido && fimValido;
   }
@@ -367,10 +740,8 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
 
         // O estado "tomado" só representa o dia atual.
         final tomado = ehHoje && remedio.tomado;
-        final atrasado = ehHoje &&
-            !tomado &&
-            minutos != 9999 &&
-            minutos < agoraMinutos;
+        final atrasado =
+            ehHoje && !tomado && minutos != 9999 && minutos < agoraMinutos;
 
         atividades.add({
           'tipo': 'medicamento',
@@ -559,8 +930,7 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
                               ? Colors.teal
                               : Colors.blueGrey;
 
-              final mostrarCabecalho =
-                  _filtroTimeline == 1 &&
+              final mostrarCabecalho = _filtroTimeline == 1 &&
                   (index == 0 ||
                       !(atividades[index - 1]['data'] as DateTime)
                           .isAtSameMomentAs(data));
@@ -634,8 +1004,7 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
                               ),
                             ),
                             if (index < atividades.length - 1 &&
-                                (atividades[index + 1]['data']
-                                        as DateTime)
+                                (atividades[index + 1]['data'] as DateTime)
                                     .isAtSameMomentAs(data))
                               Container(
                                 width: 2,
@@ -658,8 +1027,7 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
                             children: [
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       titulo,
@@ -723,9 +1091,7 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selecionado
-                ? AppTheme.primary
-                : Colors.transparent,
+            color: selecionado ? AppTheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -734,9 +1100,7 @@ class _TimelineCuidadorState extends State<_TimelineCuidador> {
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: selecionado
-                  ? Colors.white
-                  : AppTheme.textSecondary,
+              color: selecionado ? Colors.white : AppTheme.textSecondary,
             ),
           ),
         ),
@@ -787,7 +1151,6 @@ class _CuidadorRemediosTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
               if (remedios.isEmpty)
                 const _EmptyCard(
                   icon: Icons.medication_outlined,
@@ -817,16 +1180,14 @@ class _CuidadorRemediosTab extends StatelessWidget {
                             .toggleRemedio(remedio.id);
                       },
                       onConcluir: () async {
-                      await context
-                          .read<AppState>()
-                          .toggleRemedio(remedio.id);
-                    },
+                        await context
+                            .read<AppState>()
+                            .toggleRemedio(remedio.id);
+                      },
                     ),
                   ),
                 ),
-
               const SizedBox(height: 8),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -967,8 +1328,7 @@ class _FormularioRemedioSheet extends StatefulWidget {
       _FormularioRemedioSheetState();
 }
 
-class _FormularioRemedioSheetState
-    extends State<_FormularioRemedioSheet> {
+class _FormularioRemedioSheetState extends State<_FormularioRemedioSheet> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nomeController;
@@ -1031,22 +1391,16 @@ class _FormularioRemedioSheetState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _Handle(),
-
                 const SizedBox(height: 24),
-
                 Text(
-                  _editando
-                      ? 'Editar remédio'
-                      : 'Cadastrar remédio',
+                  _editando ? 'Editar remédio' : 'Cadastrar remédio',
                   style: GoogleFonts.poppins(
                     fontSize: 23,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   _editando
                       ? 'Atualize as informações do medicamento.'
@@ -1056,9 +1410,7 @@ class _FormularioRemedioSheetState
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 TextFormField(
                   controller: _nomeController,
                   textCapitalization: TextCapitalization.sentences,
@@ -1074,9 +1426,7 @@ class _FormularioRemedioSheetState
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _tipoController,
                   textCapitalization: TextCapitalization.sentences,
@@ -1092,9 +1442,7 @@ class _FormularioRemedioSheetState
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _horarioController,
                   keyboardType: TextInputType.datetime,
@@ -1110,17 +1458,14 @@ class _FormularioRemedioSheetState
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 20),
-
                 _DataSelecionavel(
                   titulo: 'Data de início',
                   data: _dataInicio,
                   onSelecionar: () async {
                     final data = await showDatePicker(
                       context: context,
-                      initialDate:
-                          _dataInicio ?? DateTime.now(),
+                      initialDate: _dataInicio ?? DateTime.now(),
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2100),
                     );
@@ -1139,19 +1484,14 @@ class _FormularioRemedioSheetState
                           });
                         },
                 ),
-
                 const SizedBox(height: 12),
-
                 _DataSelecionavel(
                   titulo: 'Data de término',
                   data: _dataFim,
                   onSelecionar: () async {
                     final data = await showDatePicker(
                       context: context,
-                      initialDate:
-                          _dataFim ??
-                          _dataInicio ??
-                          DateTime.now(),
+                      initialDate: _dataFim ?? _dataInicio ?? DateTime.now(),
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2100),
                     );
@@ -1170,7 +1510,6 @@ class _FormularioRemedioSheetState
                           });
                         },
                 ),
-
                 if (_editando) ...[
                   const SizedBox(height: 12),
                   SwitchListTile(
@@ -1191,18 +1530,14 @@ class _FormularioRemedioSheetState
                     },
                   ),
                 ],
-
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: _salvar,
                     child: Text(
-                      _editando
-                          ? 'Salvar alterações'
-                          : 'Cadastrar remédio',
+                      _editando ? 'Salvar alterações' : 'Cadastrar remédio',
                     ),
                   ),
                 ),
@@ -1289,9 +1624,7 @@ class _CuidadorCompromissosTab extends StatelessWidget {
                   color: AppTheme.textSecondary,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               if (compromissos.isEmpty)
                 const _EmptyCard(
                   icon: Icons.calendar_month_outlined,
@@ -1302,52 +1635,46 @@ class _CuidadorCompromissosTab extends StatelessWidget {
                   (compromisso) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _CompromissoGerenciavelCard(
-                    compromisso: compromisso,
-
-                    onEditar: () {
-                      _abrirFormularioCompromisso(
-                        context,
-                        compromisso: compromisso,
-                      );
-                    },
-
-                    onExcluir: () {
-                      _confirmarExclusao(
-                        context,
-                        compromisso,
-                      );
-                    },
-
-                    onConcluir: () async {
-                      final novoStatus =
-                          compromisso.status == 'concluido'
-                              ? 'pendente'
-                              : 'concluido';
-
-                      try {
-                        await context.read<AppState>().updateCompromisso(
-                          compromisso.copyWith(
-                            status: novoStatus,
-                          ),
+                      compromisso: compromisso,
+                      onEditar: () {
+                        _abrirFormularioCompromisso(
+                          context,
+                          compromisso: compromisso,
                         );
-                      } catch (e) {
-                        if (!context.mounted) return;
+                      },
+                      onExcluir: () {
+                        _confirmarExclusao(
+                          context,
+                          compromisso,
+                        );
+                      },
+                      onConcluir: () async {
+                        final novoStatus = compromisso.status == 'concluido'
+                            ? 'pendente'
+                            : 'concluido';
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Não foi possível atualizar o compromisso: $e',
+                        try {
+                          await context.read<AppState>().updateCompromisso(
+                                compromisso.copyWith(
+                                  status: novoStatus,
+                                ),
+                              );
+                        } catch (e) {
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Não foi possível atualizar o compromisso: $e',
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
-
               const SizedBox(height: 8),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -1370,8 +1697,7 @@ class _CuidadorCompromissosTab extends StatelessWidget {
     BuildContext context, {
     Compromisso? compromisso,
   }) async {
-    final resultado =
-        await showModalBottomSheet<Compromisso>(
+    final resultado = await showModalBottomSheet<Compromisso>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppTheme.background,
@@ -1451,9 +1777,7 @@ class _CuidadorCompromissosTab extends StatelessWidget {
     if (confirmar != true || !context.mounted) return;
 
     try {
-      await context
-          .read<AppState>()
-          .removeCompromisso(compromisso.id);
+      await context.read<AppState>().removeCompromisso(compromisso.id);
 
       if (!context.mounted) return;
 
@@ -1554,22 +1878,16 @@ class _FormularioCompromissoSheetState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _Handle(),
-
                 const SizedBox(height: 24),
-
                 Text(
-                  _editando
-                      ? 'Editar compromisso'
-                      : 'Cadastrar compromisso',
+                  _editando ? 'Editar compromisso' : 'Cadastrar compromisso',
                   style: GoogleFonts.poppins(
                     fontSize: 23,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   _editando
                       ? 'Atualize as informações do compromisso.'
@@ -1579,13 +1897,10 @@ class _FormularioCompromissoSheetState
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 TextFormField(
                   controller: _tituloController,
-                  textCapitalization:
-                      TextCapitalization.sentences,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     labelText: 'Título',
                     hintText: 'Ex.: Consulta médica',
@@ -1594,25 +1909,21 @@ class _FormularioCompromissoSheetState
                     ),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Informe o título.';
                     }
 
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 _DataSelecionavel(
                   titulo: 'Data',
                   data: _data,
                   onSelecionar: () async {
                     final data = await showDatePicker(
                       context: context,
-                      initialDate:
-                          _data ?? DateTime.now(),
+                      initialDate: _data ?? DateTime.now(),
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2100),
                     );
@@ -1631,9 +1942,7 @@ class _FormularioCompromissoSheetState
                           });
                         },
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _horarioController,
                   keyboardType: TextInputType.datetime,
@@ -1645,21 +1954,17 @@ class _FormularioCompromissoSheetState
                     ),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Informe o horário.';
                     }
 
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _localController,
-                  textCapitalization:
-                      TextCapitalization.sentences,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     labelText: 'Local',
                     hintText: 'Ex.: Hospital / Clínica',
@@ -1668,26 +1973,21 @@ class _FormularioCompromissoSheetState
                     ),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Informe o local.';
                     }
 
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed: _salvar,
                     child: Text(
-                      _editando
-                          ? 'Salvar alterações'
-                          : 'Cadastrar compromisso',
+                      _editando ? 'Salvar alterações' : 'Cadastrar compromisso',
                     ),
                   ),
                 ),
@@ -1780,7 +2080,6 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
     required this.onEditar,
     required this.onExcluir,
     required this.onConcluir,
-
   });
 
   @override
@@ -1798,8 +2097,7 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
         ),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 54,
@@ -1808,12 +2106,10 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
               color: AppTheme.primary.withValues(
                 alpha: 0.10,
               ),
-              borderRadius:
-                  BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   '${compromisso.dia}',
@@ -1834,13 +2130,10 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   compromisso.titulo,
@@ -1850,9 +2143,7 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Row(
                   children: [
                     const Icon(
@@ -1870,12 +2161,9 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 4),
-
                 Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(
                       Icons.location_on_outlined,
@@ -1888,16 +2176,13 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                         compromisso.local,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color:
-                              AppTheme.textSecondary,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ),
                   ],
                 ),
-
-                 const SizedBox(height: 10),
-
+                const SizedBox(height: 10),
                 GestureDetector(
                   onTap: onConcluir,
                   child: Row(
@@ -1928,7 +2213,6 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 if (compromisso.diaAbrev.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -1943,7 +2227,6 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
               ],
             ),
           ),
-
           PopupMenuButton<String>(
             onSelected: (opcao) {
               if (opcao == 'editar') {
@@ -1954,55 +2237,53 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                 onConcluir();
               }
             },
-              itemBuilder: (context) => [
-                const PopupMenuItem<String>(
-                  value: 'editar',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.edit_outlined,
-                        size: 19,
-                      ),
-                      SizedBox(width: 8),
-                      Text('Editar'),
-                    ],
-                  ),
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'editar',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 19,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Editar'),
+                  ],
                 ),
-
-                PopupMenuItem<String>(
-                  value: 'concluir',
-                  child: Row(
-                    children: [
-                      Icon(
-                        compromisso.status == 'concluido'
-                            ? Icons.undo_rounded
-                            : Icons.check_circle_outline,
-                        size: 19,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        compromisso.status == 'concluido'
-                            ? 'Marcar como pendente'
-                            : 'Marcar como feito',
-                      ),
-                    ],
-                  ),
+              ),
+              PopupMenuItem<String>(
+                value: 'concluir',
+                child: Row(
+                  children: [
+                    Icon(
+                      compromisso.status == 'concluido'
+                          ? Icons.undo_rounded
+                          : Icons.check_circle_outline,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      compromisso.status == 'concluido'
+                          ? 'Marcar como pendente'
+                          : 'Marcar como feito',
+                    ),
+                  ],
                 ),
-
-                const PopupMenuItem<String>(
-                  value: 'excluir',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.delete_outline,
-                        size: 19,
-                      ),
-                      SizedBox(width: 8),
-                      Text('Excluir'),
-                    ],
-                  ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'excluir',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 19,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Excluir'),
+                  ],
                 ),
-              ],
+              ),
+            ],
           ),
         ],
       ),
@@ -2027,7 +2308,6 @@ class _RemedioGerenciavelCard extends StatelessWidget {
     required this.onExcluir,
     required this.onToggle,
     required this.onConcluir,
-
   });
 
   @override
@@ -2039,14 +2319,11 @@ class _RemedioGerenciavelCard extends StatelessWidget {
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: remedio.tomado
-              ? Colors.green.shade200
-              : Colors.grey.shade300,
+          color: remedio.tomado ? Colors.green.shade200 : Colors.grey.shade300,
         ),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 46,
@@ -2055,47 +2332,35 @@ class _RemedioGerenciavelCard extends StatelessWidget {
               color: AppTheme.primary.withValues(
                 alpha: 0.10,
               ),
-              borderRadius:
-                  BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
               Icons.medication_outlined,
               color: AppTheme.primary,
             ),
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  remedio.nome.isEmpty
-                      ? 'Remédio'
-                      : remedio.nome,
+                  remedio.nome.isEmpty ? 'Remédio' : remedio.nome,
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
-                  remedio.tipo.isEmpty
-                      ? 'Tipo não informado'
-                      : remedio.tipo,
+                  remedio.tipo.isEmpty ? 'Tipo não informado' : remedio.tipo,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Row(
                   children: [
                     const Icon(
@@ -2115,7 +2380,6 @@ class _RemedioGerenciavelCard extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 if (remedio.dataInicio != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -2126,7 +2390,6 @@ class _RemedioGerenciavelCard extends StatelessWidget {
                     ),
                   ),
                 ],
-
                 if (remedio.dataFim != null) ...[
                   const SizedBox(height: 2),
                   Text(
@@ -2137,9 +2400,7 @@ class _RemedioGerenciavelCard extends StatelessWidget {
                     ),
                   ),
                 ],
-
                 const SizedBox(height: 10),
-
                 GestureDetector(
                   onTap: onToggle,
                   child: Row(
@@ -2156,9 +2417,7 @@ class _RemedioGerenciavelCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        remedio.tomado
-                            ? 'Tomado'
-                            : 'Marcar como tomado',
+                        remedio.tomado ? 'Tomado' : 'Marcar como tomado',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -2173,7 +2432,6 @@ class _RemedioGerenciavelCard extends StatelessWidget {
               ],
             ),
           ),
-
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'editar') {
@@ -2261,8 +2519,7 @@ class _DataSelecionavel extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     titulo,
@@ -2273,9 +2530,7 @@ class _DataSelecionavel extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    data == null
-                        ? 'Não informado'
-                        : _formatarData(data!),
+                    data == null ? 'Não informado' : _formatarData(data!),
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: AppTheme.textPrimary,
@@ -2317,17 +2572,45 @@ class _CuidadorChatTab extends StatefulWidget {
   const _CuidadorChatTab();
 
   @override
-  State<_CuidadorChatTab> createState() =>
-      _CuidadorChatTabState();
+  State<_CuidadorChatTab> createState() => _CuidadorChatTabState();
 }
 
-class _CuidadorChatTabState
-    extends State<_CuidadorChatTab> {
+class _CuidadorChatTabState extends State<_CuidadorChatTab> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
 
   String _canal = 'cuidador';
   bool _enviando = false;
+
+  String _canalFirestore(
+    AppState state,
+  ) {
+    if (_canal == 'cuidador') {
+      return state.canalCuidadorPaciente;
+    }
+
+    if (_canal == 'familia') {
+      return state.canalFamilia;
+    }
+
+    if (_canal == 'milo') {
+      return state.canalMiloUsuarioAtual ?? '';
+    }
+
+    if (_canal.startsWith(
+      'familiar:',
+    )) {
+      final familiarUid = _canal.substring(
+        'familiar:'.length,
+      );
+
+      return state.canalCuidadorFamiliar(
+        familiarUid,
+      );
+    }
+
+    return '';
+  }
 
   @override
   void dispose() {
@@ -2364,13 +2647,19 @@ class _CuidadorChatTabState
 
     final state = context.read<AppState>();
 
+    final canalFirestore = _canalFirestore(state);
+
+    if (canalFirestore.isEmpty) {
+      return;
+    }
+
     setState(() {
       _enviando = true;
     });
 
     try {
       await state.addMensagem(
-        _canal,
+        canalFirestore,
         Mensagem(
           id: 'u${DateTime.now().millisecondsSinceEpoch}',
           texto: texto,
@@ -2392,8 +2681,7 @@ class _CuidadorChatTabState
         final remedios = state.remedios;
         final compromissos = state.compromissos;
 
-        final resposta =
-            await GeminiService.enviarMensagem(
+        final resposta = await GeminiService.enviarMensagem(
           mensagemUsuario: texto,
           historico: const [],
           paciente: paciente,
@@ -2404,7 +2692,7 @@ class _CuidadorChatTabState
         if (!mounted) return;
 
         await state.addMensagem(
-          'milo',
+          canalFirestore,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
             texto: resposta,
@@ -2424,11 +2712,10 @@ class _CuidadorChatTabState
         if (!mounted) return;
 
         await state.addMensagem(
-          'milo',
+          canalFirestore,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
-            texto:
-                'Não foi possível obter a resposta do Milo agora. '
+            texto: 'Não foi possível obter a resposta do Milo agora. '
                 'Tente novamente.',
             recebido: true,
             hora: _horaAgora(),
@@ -2491,14 +2778,10 @@ class _CuidadorChatTabState
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selecionado
-                ? const Color(0xFFFDF6E3)
-                : AppTheme.surface,
+            color: selecionado ? const Color(0xFFFDF6E3) : AppTheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selecionado
-                  ? const Color(0xFFEFE2B6)
-                  : AppTheme.divider,
+              color: selecionado ? const Color(0xFFEFE2B6) : AppTheme.divider,
             ),
           ),
           child: Text(
@@ -2506,9 +2789,7 @@ class _CuidadorChatTabState
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: selecionado
-                  ? AppTheme.accent
-                  : AppTheme.textLight,
+              color: selecionado ? AppTheme.accent : AppTheme.textLight,
             ),
           ),
         ),
@@ -2548,13 +2829,10 @@ class _CuidadorChatTabState
     final minhaMensagem = !mensagem.recebido;
 
     return Align(
-      alignment: minhaMensagem
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
+      alignment: minhaMensagem ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth:
-              MediaQuery.of(context).size.width * 0.72,
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
         ),
         margin: const EdgeInsets.only(
           bottom: 10,
@@ -2564,9 +2842,7 @@ class _CuidadorChatTabState
           vertical: 10,
         ),
         decoration: BoxDecoration(
-          color: minhaMensagem
-              ? AppTheme.primary
-              : const Color(0xFFE0F4F1),
+          color: minhaMensagem ? AppTheme.primary : const Color(0xFFE0F4F1),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -2579,11 +2855,9 @@ class _CuidadorChatTabState
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!minhaMensagem &&
-                mensagem.remetente != null)
+            if (!minhaMensagem && mensagem.remetente != null)
               Padding(
                 padding: const EdgeInsets.only(
                   bottom: 2,
@@ -2604,9 +2878,7 @@ class _CuidadorChatTabState
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 height: 1.3,
-                color: minhaMensagem
-                    ? Colors.white
-                    : AppTheme.textPrimary,
+                color: minhaMensagem ? Colors.white : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -2614,9 +2886,7 @@ class _CuidadorChatTabState
               mensagem.hora,
               style: GoogleFonts.poppins(
                 fontSize: 10,
-                color: minhaMensagem
-                    ? Colors.white70
-                    : AppTheme.textSecondary,
+                color: minhaMensagem ? Colors.white70 : AppTheme.textSecondary,
               ),
             ),
           ],
@@ -2629,7 +2899,23 @@ class _CuidadorChatTabState
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final paciente = state.paciente;
-    final mensagens = state.mensagens(_canal);
+    final canalFirestore = _canalFirestore(state);
+
+    final mensagens = canalFirestore.isEmpty
+        ? <Mensagem>[]
+        : state.mensagens(
+            canalFirestore,
+          );
+
+    final familiarUid =
+    state.familiaresVinculados.isNotEmpty
+        ? state.familiaresVinculados.first['uid'] ?? ''
+        : '';
+    
+    final familiarNome =
+    state.familiaresVinculados.isNotEmpty
+        ? state.familiaresVinculados.first['nome'] ?? 'Familiar'
+        : 'Familiar';
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -2651,84 +2937,83 @@ class _CuidadorChatTabState
             // PACIENTE
             // --------------------------------------------------
             Container(
-  width: double.infinity,
-  padding: const EdgeInsets.fromLTRB(
-    24,
-    16,
-    24,
-    16,
-  ),
-  decoration: BoxDecoration(
-    color: AppTheme.surface,
-    border: Border(
-      bottom: BorderSide(
-        color: Colors.grey.shade300,
-      ),
-    ),
-  ),
-  child: Row(
-    children: [
-      CircleAvatar(
-        radius: 24,
-        backgroundColor:
-            AppTheme.primary.withValues(
-          alpha: 0.10,
-        ),
-        child: Icon(
-          _canal == 'milo'
-              ? Icons.smart_toy_outlined
-              : _canal == 'familia'
-                  ? Icons.groups_outlined
-                  : Icons.person,
-          color: AppTheme.primary,
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            Text(
-              _canal == 'milo'
-                  ? 'Milo'
-                  : _canal == 'familia'
-                      ? 'Família'
-                      : paciente.nome.isEmpty
-                          ? 'Paciente'
-                          : paciente.nome,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight:
-                    FontWeight.w600,
-                color:
-                    AppTheme.textPrimary,
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                16,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey.shade300,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppTheme.primary.withValues(
+                      alpha: 0.10,
+                    ),
+                    child: Icon(
+                      _canal == 'milo'
+                          ? Icons.smart_toy_outlined
+                          : _canal == 'familia'
+                              ? Icons.groups_outlined
+                              : Icons.person,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      Text(
+                        _canal == 'milo'
+                            ? 'Milo'
+                            : _canal == 'familia'
+                                ? 'Família'
+                                : _canal.startsWith('familiar:')
+                                    ? 'Familiar'
+                                    : paciente.nome.isEmpty
+                                        ? 'Paciente'
+                                        : paciente.nome,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      Text(
+                        _canal == 'milo'
+                            ? 'Assistente virtual'
+                            : _canal == 'familia'
+                                ? paciente.nome.isEmpty
+                                    ? 'Grupo da família'
+                                    : 'Grupo da família de ${paciente.nome}'
+                                : _canal.startsWith('familiar:')
+                                    ? familiarNome
+                                    : 'Paciente',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              _canal == 'milo'
-                  ? 'Assistente virtual'
-                  : _canal == 'familia'
-                      ? paciente.nome.isEmpty
-                          ? 'Família do paciente'
-                          : 'Família de ${paciente.nome}'
-                      : 'Paciente',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color:
-                    AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  ),
-),
 
             // --------------------------------------------------
-            // CANAIS
-            // --------------------------------------------------
+// CANAIS
+// --------------------------------------------------
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 20,
@@ -2742,12 +3027,21 @@ class _CuidadorChatTabState
                     'Paciente',
                     'cuidador',
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 5),
                   _canalChip(
                     'Família',
                     'familia',
                   ),
-                  const SizedBox(width: 8),
+
+                   if (familiarUid.isNotEmpty) ...[
+      _canalChip(
+        'Familiar',
+        'familiar:$familiarUid',
+      ),
+      const SizedBox(width: 5),
+    ],
+
+                  const SizedBox(width: 5),
                   _canalChip(
                     'Milo',
                     'milo',
@@ -2764,26 +3058,21 @@ class _CuidadorChatTabState
                   ? const _EmptyChat()
                   : ListView.builder(
                       controller: _scroll,
-                      padding:
-                          const EdgeInsets.fromLTRB(
+                      padding: const EdgeInsets.fromLTRB(
                         20,
                         8,
                         20,
                         16,
                       ),
                       itemCount: mensagens.length,
-                      itemBuilder:
-                          (context, index) {
-                        final mensagem =
-                            mensagens[index];
+                      itemBuilder: (context, index) {
+                        final mensagem = mensagens[index];
 
-                        final mostrarData =
-                            index == 0 ||
-                                !_mesmoDia(
-                                  mensagens[
-                                      index - 1],
-                                  mensagem,
-                                );
+                        final mostrarData = index == 0 ||
+                            !_mesmoDia(
+                              mensagens[index - 1],
+                              mensagem,
+                            );
 
                         return Column(
                           children: [
@@ -2813,8 +3102,7 @@ class _CuidadorChatTabState
                   Expanded(
                     child: TextField(
                       controller: _input,
-                      textCapitalization:
-                          TextCapitalization.sentences,
+                      textCapitalization: TextCapitalization.sentences,
                       onSubmitted: (_) => _enviar(),
                       enabled: !_enviando,
                       decoration: InputDecoration(
@@ -2824,8 +3112,7 @@ class _CuidadorChatTabState
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(
+                          borderRadius: BorderRadius.circular(
                             24,
                           ),
                           borderSide: BorderSide.none,
@@ -2836,18 +3123,15 @@ class _CuidadorChatTabState
                   const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: _enviando
-                        ? AppTheme.textLight
-                        : AppTheme.primary,
+                    backgroundColor:
+                        _enviando ? AppTheme.textLight : AppTheme.primary,
                     child: IconButton(
-                      onPressed:
-                          _enviando ? null : _enviar,
+                      onPressed: _enviando ? null : _enviar,
                       icon: _enviando
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child:
-                                  CircularProgressIndicator(
+                              child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
                               ),
@@ -2898,16 +3182,14 @@ class _CuidadorPerfilTab extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
-                  borderRadius:
-                      BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: Colors.grey.shade300,
                   ),
@@ -2916,8 +3198,7 @@ class _CuidadorPerfilTab extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 38,
-                      backgroundColor:
-                          AppTheme.primary.withValues(
+                      backgroundColor: AppTheme.primary.withValues(
                         alpha: 0.10,
                       ),
                       child: const Icon(
@@ -2929,8 +3210,8 @@ class _CuidadorPerfilTab extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       state.usuarioAtualNome.isNotEmpty
-                      ? state.usuarioAtualNome
-                      : 'Cuidador',
+                          ? state.usuarioAtualNome
+                          : 'Cuidador',
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -2947,9 +3228,7 @@ class _CuidadorPerfilTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      paciente.nome.isEmpty
-                          ? 'Nenhum paciente'
-                          : paciente.nome,
+                      paciente.nome.isEmpty ? 'Nenhum paciente' : paciente.nome,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -2959,27 +3238,60 @@ class _CuidadorPerfilTab extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              _PerfilInfoCard(
-                titulo: 'Vínculo',
-                icon: Icons.link,
-                texto: paciente.nome.isEmpty
-                    ? 'Nenhum paciente vinculado.'
-                    : 'Você está vinculado a ${paciente.nome}.',
-              ),
 
+                _PerfilInfoCard(
+  titulo: 'Função',
+  icon:
+      Icons.badge_outlined,
+  texto: 'Cuidador',
+),
+
+const SizedBox(height: 12),
+
+_PerfilInfoCard(
+  titulo: 'Turno',
+  icon:
+      Icons.schedule_outlined,
+  texto:
+      paciente.cuidadorTurno
+              .trim()
+              .isEmpty
+          ? 'Não informado'
+          : paciente.cuidadorTurno,
+),
+
+const SizedBox(height: 12),
+
+_PerfilInfoCard(
+  titulo: 'Carga',
+  icon:
+      Icons.access_time_outlined,
+  texto:
+      paciente.cuidadorCarga
+              .trim()
+              .isEmpty
+          ? 'Não informada'
+          : paciente.cuidadorCarga,
+),
+
+const SizedBox(height: 12),
+
+_PerfilInfoCard(
+  titulo: 'Vínculo',
+  icon: Icons.link,
+  texto: paciente.nome.isEmpty
+      ? 'Nenhum paciente vinculado.'
+      : 'Você está vinculado a ${paciente.nome}.',
+),
               const SizedBox(height: 20),
-
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    await context
-                        .read<AppState>()
-                        .logout();
+                    await context.read<AppState>().logout();
 
                     if (!context.mounted) return;
 
@@ -3047,8 +3359,7 @@ class _PacienteResumoCard extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Paciente vinculado',
@@ -3059,9 +3370,7 @@ class _PacienteResumoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    paciente.nome.isEmpty
-                        ? 'Paciente'
-                        : paciente.nome,
+                    paciente.nome.isEmpty ? 'Paciente' : paciente.nome,
                     style: GoogleFonts.poppins(
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
@@ -3115,55 +3424,54 @@ class _ResumoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-return InkWell(
-  onTap: onTap,
-  borderRadius: BorderRadius.circular(16),
-  child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.primary,
+              size: 24,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              titulo,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              valor,
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            Text(
+              descricao,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            color: AppTheme.primary,
-            size: 24,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            titulo,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            valor,
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          Text(
-            descricao,
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    ),
-);
+    );
   }
 }
 
@@ -3191,8 +3499,7 @@ class _InformacoesSaudeCard extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Informações importantes',
@@ -3272,8 +3579,7 @@ class _RemedioResumoCard extends StatelessWidget {
               color: AppTheme.primary.withValues(
                 alpha: 0.10,
               ),
-              borderRadius:
-                  BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
               Icons.medication_outlined,
@@ -3283,13 +3589,10 @@ class _RemedioResumoCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  remedio.nome.isEmpty
-                      ? 'Remédio'
-                      : remedio.nome,
+                  remedio.nome.isEmpty ? 'Remédio' : remedio.nome,
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -3298,9 +3601,7 @@ class _RemedioResumoCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  remedio.tipo.isEmpty
-                      ? 'Tipo não informado'
-                      : remedio.tipo,
+                  remedio.tipo.isEmpty ? 'Tipo não informado' : remedio.tipo,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
@@ -3330,12 +3631,8 @@ class _RemedioResumoCard extends StatelessWidget {
             ),
           ),
           Icon(
-            remedio.tomado
-                ? Icons.check_circle
-                : Icons.radio_button_unchecked,
-            color: remedio.tomado
-                ? Colors.green
-                : AppTheme.textSecondary,
+            remedio.tomado ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: remedio.tomado ? Colors.green : AppTheme.textSecondary,
           ),
         ],
       ),
@@ -3371,12 +3668,10 @@ class _CompromissoResumoCard extends StatelessWidget {
               color: AppTheme.primary.withValues(
                 alpha: 0.10,
               ),
-              borderRadius:
-                  BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   '${compromisso.dia}',
@@ -3400,8 +3695,7 @@ class _CompromissoResumoCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   compromisso.titulo,
@@ -3568,9 +3862,60 @@ class _HistoricoAcompanhamentoCardState
 
     // Adesão representa a proporção de atividades
     // realizadas no horário.
-    final adesao = total == 0
-        ? 0
-        : ((concluidas / total) * 100).round();
+    final adesao = total == 0 ? 0 : ((concluidas / total) * 100).round();
+
+    final adesaoPorDia = List.generate(
+  7,
+  (index) {
+    final dia = inicioSemana.add(
+      Duration(days: index),
+    );
+
+    final itensDia =
+        historicos.where((item) {
+      final realizada =
+          item.dataRealizada;
+
+      if (realizada == null) {
+        return false;
+      }
+
+      return realizada.year ==
+              dia.year &&
+          realizada.month ==
+              dia.month &&
+          realizada.day ==
+              dia.day;
+    }).toList();
+
+    if (itensDia.isEmpty) {
+      return 0;
+    }
+
+    final noHorario =
+        itensDia.where((item) {
+      final realizado =
+          item.dataRealizada;
+      final previsto =
+          item.dataPrevista;
+
+      if (realizado == null ||
+          previsto == null) {
+        return item.resultado ==
+            'concluido';
+      }
+
+      return !realizado.isAfter(
+        previsto,
+      );
+    }).length;
+
+    return ((noHorario /
+                itensDia.length) *
+            100)
+        .round();
+  },
+);
 
     // ============================================================
     // LISTA
@@ -3579,21 +3924,19 @@ class _HistoricoAcompanhamentoCardState
     final atividadesExibidas = [...atividadesSelecionadas];
 
     atividadesExibidas.sort(
-      (a, b) => (b.dataRealizada ?? b.data)
-          .compareTo(a.dataRealizada ?? a.data),
+      (a, b) =>
+          (b.dataRealizada ?? b.data).compareTo(a.dataRealizada ?? a.data),
     );
 
     // ============================================================
     // TÍTULOS DO PERÍODO
     // ============================================================
 
-    final tituloPeriodo =
-        _mostrarHoje ? 'Hoje' : 'Esta semana';
+    final tituloPeriodo = _mostrarHoje ? 'Hoje' : 'Esta semana';
 
-    final subtituloPeriodo =
-        _mostrarHoje
-            ? 'Resumo das atividades de hoje'
-            : 'Resumo das atividades da semana';
+    final subtituloPeriodo = _mostrarHoje
+        ? 'Resumo das atividades de hoje'
+        : 'Resumo das atividades da semana';
 
     // ============================================================
     // CARD
@@ -3635,8 +3978,7 @@ class _HistoricoAcompanhamentoCardState
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Histórico e acompanhamento',
@@ -3733,12 +4075,30 @@ class _HistoricoAcompanhamentoCardState
               value: adesao / 100,
               minHeight: 7,
               backgroundColor: Colors.grey.shade200,
-              valueColor:
-                  const AlwaysStoppedAnimation(
+              valueColor: const AlwaysStoppedAnimation(
                 AppTheme.primary,
               ),
             ),
           ),
+
+          if (!_mostrarHoje) ...[
+  const SizedBox(height: 20),
+
+  Text(
+    'Adesão ao longo da semana',
+    style: GoogleFonts.poppins(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: AppTheme.textPrimary,
+    ),
+  ),
+
+  const SizedBox(height: 12),
+
+  _HistoricoAdesaoGrafico(
+    valores: adesaoPorDia,
+  ),
+],
 
           const SizedBox(height: 18),
 
@@ -3762,26 +4122,22 @@ class _HistoricoAcompanhamentoCardState
                       });
                     },
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: _mostrarHoje
                             ? AppTheme.surface
                             : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8),
                         boxShadow: _mostrarHoje
                             ? [
                                 BoxShadow(
-                                  color: Colors.black
-                                      .withValues(
+                                  color: Colors.black.withValues(
                                     alpha: 0.05,
                                   ),
                                   blurRadius: 4,
-                                  offset:
-                                      const Offset(0, 1),
+                                  offset: const Offset(0, 1),
                                 ),
                               ]
                             : null,
@@ -3809,26 +4165,22 @@ class _HistoricoAcompanhamentoCardState
                       });
                     },
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: !_mostrarHoje
                             ? AppTheme.surface
                             : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8),
                         boxShadow: !_mostrarHoje
                             ? [
                                 BoxShadow(
-                                  color: Colors.black
-                                      .withValues(
+                                  color: Colors.black.withValues(
                                     alpha: 0.05,
                                   ),
                                   blurRadius: 4,
-                                  offset:
-                                      const Offset(0, 1),
+                                  offset: const Offset(0, 1),
                                 ),
                               ]
                             : null,
@@ -3862,9 +4214,7 @@ class _HistoricoAcompanhamentoCardState
             children: [
               Expanded(
                 child: Text(
-                  _mostrarHoje
-                      ? 'Atividades de hoje'
-                      : 'Atividades da semana',
+                  _mostrarHoje ? 'Atividades de hoje' : 'Atividades da semana',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -3875,30 +4225,23 @@ class _HistoricoAcompanhamentoCardState
               IconButton(
                 onPressed: () {
                   setState(() {
-                    _listaExpandida =
-                        !_listaExpandida;
+                    _listaExpandida = !_listaExpandida;
                   });
                 },
                 icon: Icon(
-                  _listaExpandida
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  _listaExpandida ? Icons.expand_less : Icons.expand_more,
                   color: AppTheme.primary,
                 ),
-                tooltip: _listaExpandida
-                    ? 'Recolher'
-                    : 'Expandir',
+                tooltip: _listaExpandida ? 'Recolher' : 'Expandir',
               ),
             ],
           ),
 
           if (_listaExpandida) ...[
             const SizedBox(height: 4),
-
             if (atividadesExibidas.isEmpty)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   vertical: 8,
                 ),
                 child: Text(
@@ -3919,6 +4262,108 @@ class _HistoricoAcompanhamentoCardState
               ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _HistoricoAdesaoGrafico
+    extends StatelessWidget {
+  final List<int> valores;
+
+  const _HistoricoAdesaoGrafico({
+    required this.valores,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const dias = [
+      'Seg',
+      'Ter',
+      'Qua',
+      'Qui',
+      'Sex',
+      'Sáb',
+      'Dom',
+    ];
+
+    return SizedBox(
+      height: 145,
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.end,
+        children: List.generate(
+          7,
+          (index) {
+            final valor =
+                valores[index].clamp(0, 100);
+
+            return Expanded(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 3,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '$valor%',
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight:
+                            FontWeight.w600,
+                        color:
+                            AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Expanded(
+                      child: Container(
+                        width: 22,
+                        alignment:
+                            Alignment.bottomCenter,
+                        decoration: BoxDecoration(
+                          color:
+                              Colors.grey.shade100,
+                          borderRadius:
+                              BorderRadius.circular(8),
+                        ),
+                        child:
+                            FractionallySizedBox(
+                          heightFactor:
+                              valor / 100,
+                          widthFactor: 1,
+                          alignment:
+                              Alignment.bottomCenter,
+                          child: Container(
+                            decoration:
+                                BoxDecoration(
+                              color:
+                                  AppTheme.primary,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      dias[index],
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        color:
+                            AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -4427,18 +4872,13 @@ class _CognitivoGraficoPainter extends CustomPainter {
     const topo = 10.0;
     const baixo = 28.0;
 
-    final larguraGrafico =
-        size.width - esquerda - direita;
+    final larguraGrafico = size.width - esquerda - direita;
 
-    final alturaGrafico =
-        size.height - topo - baixo;
+    final alturaGrafico = size.height - topo - baixo;
 
     // Linhas horizontais de referência.
     for (int i = 0; i <= 4; i++) {
-      final y =
-          topo +
-          alturaGrafico -
-          (alturaGrafico * i / 4);
+      final y = topo + alturaGrafico - (alturaGrafico * i / 4);
 
       canvas.drawLine(
         Offset(esquerda, y),
@@ -4475,20 +4915,11 @@ class _CognitivoGraficoPainter extends CustomPainter {
 
       final x = resultados.length == 1
           ? esquerda
-          : esquerda +
-              larguraGrafico *
-                  i /
-                  (resultados.length - 1);
+          : esquerda + larguraGrafico * i / (resultados.length - 1);
 
-      final pontuacao =
-          resultado.pontuacao.clamp(0, 100);
+      final pontuacao = resultado.pontuacao.clamp(0, 100);
 
-      final y =
-          topo +
-          alturaGrafico -
-          (alturaGrafico *
-              pontuacao /
-              100);
+      final y = topo + alturaGrafico - (alturaGrafico * pontuacao / 100);
 
       final ponto = Offset(x, y);
 
@@ -4518,22 +4949,13 @@ class _CognitivoGraficoPainter extends CustomPainter {
       ..color = AppTheme.primary;
 
     for (int i = 0; i < resultados.length; i++) {
-      final pontuacao =
-          resultados[i].pontuacao.clamp(0, 100);
+      final pontuacao = resultados[i].pontuacao.clamp(0, 100);
 
       final x = resultados.length == 1
           ? esquerda
-          : esquerda +
-              larguraGrafico *
-                  i /
-                  (resultados.length - 1);
+          : esquerda + larguraGrafico * i / (resultados.length - 1);
 
-      final y =
-          topo +
-          alturaGrafico -
-          (alturaGrafico *
-              pontuacao /
-              100);
+      final y = topo + alturaGrafico - (alturaGrafico * pontuacao / 100);
 
       canvas.drawCircle(
         Offset(x, y),
@@ -4560,6 +4982,36 @@ class _CognitivoResultadoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pontuacao =
+    resultado.pontuacao;
+
+final String desempenho;
+final Color corDesempenho;
+final IconData iconeDesempenho;
+
+if (pontuacao >= 80) {
+  desempenho =
+      'Bom desempenho';
+  corDesempenho =
+      Colors.green;
+  iconeDesempenho =
+      Icons.trending_up;
+} else if (pontuacao >= 60) {
+  desempenho =
+      'Desempenho estável';
+  corDesempenho =
+      Colors.orange;
+  iconeDesempenho =
+      Icons.trending_flat;
+} else {
+  desempenho =
+      'Acompanhar evolução';
+  corDesempenho =
+      Colors.redAccent;
+  iconeDesempenho =
+      Icons.trending_down;
+}
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -4580,13 +5032,10 @@ class _CognitivoResultadoItem extends StatelessWidget {
               size: 20,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   resultado.titulo,
@@ -4598,9 +5047,7 @@ class _CognitivoResultadoItem extends StatelessWidget {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   '${resultado.acertos} acertos · '
                   '${resultado.erros} erros · '
@@ -4610,15 +5057,32 @@ class _CognitivoResultadoItem extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 7),
+
+Row(
+  children: [
+    Icon(
+      iconeDesempenho,
+      size: 14,
+      color: corDesempenho,
+    ),
+    const SizedBox(width: 4),
+    Text(
+      desempenho,
+      style: GoogleFonts.poppins(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: corDesempenho,
+      ),
+    ),
+  ],
+),
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
           Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 '${resultado.pontuacao}%',
@@ -4653,10 +5117,14 @@ class _CognitivoResultadoItem extends StatelessWidget {
     return '${minutos}min ${segundosRestantes}s';
   }
 
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/'
-        '${data.month.toString().padLeft(2, '0')}';
-  }
+String _formatarData(
+  DateTime data,
+) {
+  return '${data.day.toString().padLeft(2, '0')}/'
+      '${data.month.toString().padLeft(2, '0')} '
+      '${data.hour.toString().padLeft(2, '0')}:'
+      '${data.minute.toString().padLeft(2, '0')}';
+}
 }
 
 class _HistoricoAtividadeItem extends StatelessWidget {
@@ -4668,10 +5136,9 @@ class _HistoricoAtividadeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-final atrasado =
-    item.dataRealizada != null &&
-    item.dataPrevista != null &&
-    DateTime(
+    final atrasado = item.dataRealizada != null &&
+        item.dataPrevista != null &&
+        DateTime(
           item.dataRealizada!.year,
           item.dataRealizada!.month,
           item.dataRealizada!.day,
@@ -4690,40 +5157,36 @@ final atrasado =
     final realizado = item.dataRealizada;
     final previsto = item.dataPrevista;
 
-int? atrasoMinutos;
+    int? atrasoMinutos;
 
-if (realizado != null && previsto != null) {
-  final realizadoMinuto = DateTime(
-    realizado.year,
-    realizado.month,
-    realizado.day,
-    realizado.hour,
-    realizado.minute,
-  );
+    if (realizado != null && previsto != null) {
+      final realizadoMinuto = DateTime(
+        realizado.year,
+        realizado.month,
+        realizado.day,
+        realizado.hour,
+        realizado.minute,
+      );
 
-  final previstoMinuto = DateTime(
-    previsto.year,
-    previsto.month,
-    previsto.day,
-    previsto.hour,
-    previsto.minute,
-  );
+      final previstoMinuto = DateTime(
+        previsto.year,
+        previsto.month,
+        previsto.day,
+        previsto.hour,
+        previsto.minute,
+      );
 
-  final diferenca =
-      realizadoMinuto.difference(previstoMinuto).inMinutes;
+      final diferenca = realizadoMinuto.difference(previstoMinuto).inMinutes;
 
-  if (diferenca > 0) {
-    atrasoMinutos = diferenca;
-  }
-}
+      if (diferenca > 0) {
+        atrasoMinutos = diferenca;
+      }
+    }
 
-    final cor = atrasado
-        ? Colors.orange
-        : Colors.green;
+    final cor = atrasado ? Colors.orange : Colors.green;
 
-    final icone = atrasado
-        ? Icons.schedule_outlined
-        : Icons.check_circle_outline;
+    final icone =
+        atrasado ? Icons.schedule_outlined : Icons.check_circle_outline;
 
     String tipo;
 
@@ -4753,23 +5216,22 @@ if (realizado != null && previsto != null) {
     String textoStatus;
 
     if (atrasado) {
-    if (atrasoMinutos != null) {
-      final horas = atrasoMinutos ~/ 60;
-      final minutos = atrasoMinutos % 60;
+      if (atrasoMinutos != null) {
+        final horas = atrasoMinutos ~/ 60;
+        final minutos = atrasoMinutos % 60;
 
-      if (horas > 0) {
-        textoStatus =
-            'Atrasado em ${horas}h${minutos > 0 ? ' ${minutos}min' : ''}';
+        if (horas > 0) {
+          textoStatus =
+              'Atrasado em ${horas}h${minutos > 0 ? ' ${minutos}min' : ''}';
+        } else {
+          textoStatus = 'Atrasado em ${minutos}min';
+        }
       } else {
-        textoStatus =
-            'Atrasado em ${minutos}min';
+        textoStatus = 'Atrasado';
       }
     } else {
-      textoStatus = 'Atrasado';
+      textoStatus = 'Realizado no horário';
     }
-  } else {
-    textoStatus = 'Realizado no horário';
-  }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -4782,8 +5244,7 @@ if (realizado != null && previsto != null) {
         ),
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             icone,
@@ -4793,8 +5254,7 @@ if (realizado != null && previsto != null) {
           const SizedBox(width: 10),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
@@ -4818,9 +5278,7 @@ if (realizado != null && previsto != null) {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 4),
-
                 if (previsto != null)
                   Text(
                     'Previsto: ${formatarHora(previsto)}'
@@ -4830,9 +5288,7 @@ if (realizado != null && previsto != null) {
                       color: AppTheme.textSecondary,
                     ),
                   ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   textoStatus,
                   style: GoogleFonts.poppins(
@@ -4924,21 +5380,18 @@ class _SosCard extends StatelessWidget {
   String _formatarDataHora(DateTime data) {
     final agora = DateTime.now();
 
-    final mesmaData =
-        agora.year == data.year &&
+    final mesmaData = agora.year == data.year &&
         agora.month == data.month &&
         agora.day == data.day;
 
-    final hora =
-        '${data.hour.toString().padLeft(2, '0')}:'
+    final hora = '${data.hour.toString().padLeft(2, '0')}:'
         '${data.minute.toString().padLeft(2, '0')}';
 
     if (mesmaData) {
       return 'Hoje, $hora';
     }
 
-    final dia =
-        '${data.day.toString().padLeft(2, '0')}/'
+    final dia = '${data.day.toString().padLeft(2, '0')}/'
         '${data.month.toString().padLeft(2, '0')}/'
         '${data.year}';
 
@@ -4969,9 +5422,7 @@ class _SosCard extends StatelessWidget {
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: ativado
-              ? Colors.red.shade300
-              : Colors.grey.shade300,
+          color: ativado ? Colors.red.shade300 : Colors.grey.shade300,
         ),
       ),
       child: Row(
@@ -4987,9 +5438,7 @@ class _SosCard extends StatelessWidget {
             ),
             child: Icon(
               Icons.sos,
-              color: ativado
-                  ? Colors.red
-                  : AppTheme.primary,
+              color: ativado ? Colors.red : AppTheme.primary,
             ),
           ),
           const SizedBox(width: 14),
@@ -4998,15 +5447,11 @@ class _SosCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ativado
-                      ? 'SOS acionado'
-                      : 'Nenhum SOS ativo',
+                  ativado ? 'SOS acionado' : 'Nenhum SOS ativo',
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: ativado
-                        ? Colors.red.shade700
-                        : AppTheme.textPrimary,
+                    color: ativado ? Colors.red.shade700 : AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -5072,13 +5517,10 @@ class _DadosPacienteSheet extends StatelessWidget {
               32,
             ),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _Handle(),
-
                 const SizedBox(height: 24),
-
                 Text(
                   'Dados do paciente',
                   style: GoogleFonts.poppins(
@@ -5087,9 +5529,7 @@ class _DadosPacienteSheet extends StatelessWidget {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   paciente.nome,
                   style: GoogleFonts.poppins(
@@ -5097,9 +5537,7 @@ class _DadosPacienteSheet extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 _SecaoDados(
                   titulo: 'Informações pessoais',
                   children: [
@@ -5133,9 +5571,7 @@ class _DadosPacienteSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 18),
-
                 _SecaoDados(
                   titulo: 'Informações de saúde',
                   children: [
@@ -5161,9 +5597,7 @@ class _DadosPacienteSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 18),
-
                 _SecaoDados(
                   titulo: 'Informações do cuidador',
                   children: [
@@ -5181,9 +5615,7 @@ class _DadosPacienteSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 18),
-
                 _SecaoDados(
                   titulo: 'Documentos',
                   children: [
@@ -5260,8 +5692,7 @@ class _SecaoDados extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             titulo,
@@ -5290,16 +5721,12 @@ class _CampoPaciente extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final valorFinal =
-        valor.trim().isEmpty
-            ? 'Não informado'
-            : valor;
+    final valorFinal = valor.trim().isEmpty ? 'Não informado' : valor;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             titulo,
@@ -5337,8 +5764,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
@@ -5426,8 +5852,7 @@ class _EmptyChat extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.chat_bubble_outline,
@@ -5493,8 +5918,7 @@ class _PerfilInfoCard extends StatelessWidget {
               color: AppTheme.primary.withValues(
                 alpha: 0.10,
               ),
-              borderRadius:
-                  BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
@@ -5504,8 +5928,7 @@ class _PerfilInfoCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   titulo,
@@ -5553,8 +5976,7 @@ class _CuidadosIntensivosCard extends StatelessWidget {
     );
 
     final cuidadosHoje = cuidados.where((cuidado) {
-      if (cuidado.dataInicio == null ||
-          cuidado.dataFim == null) {
+      if (cuidado.dataInicio == null || cuidado.dataFim == null) {
         return false;
       }
 
@@ -5570,8 +5992,7 @@ class _CuidadosIntensivosCard extends StatelessWidget {
         cuidado.dataFim!.day,
       );
 
-      return !inicio.isAfter(dataHoje) &&
-          !fim.isBefore(dataHoje);
+      return !inicio.isAfter(dataHoje) && !fim.isBefore(dataHoje);
     }).toList();
 
     final proximosCuidados = cuidados.where((cuidado) {
@@ -5632,9 +6053,7 @@ class _CuidadosIntensivosCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 8),
-
           if (cuidados.isEmpty)
             Text(
               'Nenhum cuidado intensivo configurado.',
@@ -5656,57 +6075,44 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                   color: AppTheme.textPrimary,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               ...cuidadosHoje.map(
                 (cuidado) {
-                  final concluido =
-                      cuidado.concluidoEm(dataHoje);
+                  final concluido = cuidado.concluidoEm(dataHoje);
 
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-
                     leading: Icon(
                       concluido
                           ? Icons.check_circle
                           : Icons.check_circle_outline,
-                      color: concluido
-                          ? Colors.green
-                          : AppTheme.primary,
+                      color: concluido ? Colors.green : AppTheme.primary,
                     ),
-
                     title: Text(
                       cuidado.tipo,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        decoration: concluido
-                            ? TextDecoration.lineThrough
-                            : null,
+                        decoration:
+                            concluido ? TextDecoration.lineThrough : null,
                       ),
                     ),
-
                     subtitle: Text(
                       '${cuidado.horario}'
                       '${concluido ? ' • Feito' : ' • Pendente'}',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: concluido
-                            ? Colors.green
-                            : AppTheme.textSecondary,
+                        color:
+                            concluido ? Colors.green : AppTheme.textSecondary,
                       ),
                     ),
-
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (!concluido)
                           IconButton(
                             onPressed: () async {
-                              await context
-                                  .read<AppState>()
-                                  .concluirCuidado(
+                              await context.read<AppState>().concluirCuidado(
                                     cuidado.id,
                                     dataHoje,
                                   );
@@ -5714,26 +6120,25 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                             icon: const Icon(Icons.check),
                             tooltip: 'Marcar como feito',
                           ),
-
                         PopupMenuButton<String>(
-                        onSelected: (opcao) {
-                          if (opcao == 'editar') {
-                            _mostrarFormularioCuidado(
-                              context,
-                              cuidado: cuidado,
-                            );
-                          }
-
-                          if (opcao == 'excluir') {
-                            final appState = context.read<AppState>();
-
-                            Future.microtask(() async {
-                              await appState.removeCuidado(
-                                cuidado.id,
+                          onSelected: (opcao) {
+                            if (opcao == 'editar') {
+                              _mostrarFormularioCuidado(
+                                context,
+                                cuidado: cuidado,
                               );
-                            });
-                          }
-                        },
+                            }
+
+                            if (opcao == 'excluir') {
+                              final appState = context.read<AppState>();
+
+                              Future.microtask(() async {
+                                await appState.removeCuidado(
+                                  cuidado.id,
+                                );
+                              });
+                            }
+                          },
                           itemBuilder: (context) => const [
                             PopupMenuItem(
                               value: 'editar',
@@ -5757,7 +6162,6 @@ class _CuidadosIntensivosCard extends StatelessWidget {
             // ==================================================
             if (proximosCuidados.isNotEmpty) ...[
               const SizedBox(height: 12),
-
               Text(
                 'Próximos cuidados',
                 style: GoogleFonts.poppins(
@@ -5766,18 +6170,14 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                   color: AppTheme.textPrimary,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               ...proximosCuidados.map(
                 (cuidado) => ListTile(
                   contentPadding: EdgeInsets.zero,
-
                   leading: const Icon(
                     Icons.calendar_today_outlined,
                     color: AppTheme.primary,
                   ),
-
                   title: Text(
                     cuidado.tipo,
                     style: GoogleFonts.poppins(
@@ -5785,7 +6185,6 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-
                   subtitle: Text(
                     'Começa em '
                     '${_formatarData(cuidado.dataInicio!)}'
@@ -5795,26 +6194,25 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                       color: AppTheme.textSecondary,
                     ),
                   ),
-
                   trailing: PopupMenuButton<String>(
-                  onSelected: (opcao) {
-                    if (opcao == 'editar') {
-                      _mostrarFormularioCuidado(
-                        context,
-                        cuidado: cuidado,
-                      );
-                    }
-
-                    if (opcao == 'excluir') {
-                      final appState = context.read<AppState>();
-
-                      Future.microtask(() async {
-                        await appState.removeCuidado(
-                          cuidado.id,
+                    onSelected: (opcao) {
+                      if (opcao == 'editar') {
+                        _mostrarFormularioCuidado(
+                          context,
+                          cuidado: cuidado,
                         );
-                      });
-                    }
-                  },
+                      }
+
+                      if (opcao == 'excluir') {
+                        final appState = context.read<AppState>();
+
+                        Future.microtask(() async {
+                          await appState.removeCuidado(
+                            cuidado.id,
+                          );
+                        });
+                      }
+                    },
                     itemBuilder: (context) => const [
                       PopupMenuItem(
                         value: 'editar',
@@ -5830,9 +6228,7 @@ class _CuidadosIntensivosCard extends StatelessWidget {
               ),
             ],
           ],
-
           const SizedBox(height: 8),
-
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -5880,14 +6276,13 @@ class _FormularioCuidadoSheet extends StatefulWidget {
       _FormularioCuidadoSheetState();
 }
 
-class _FormularioCuidadoSheetState
-    extends State<_FormularioCuidadoSheet> {
+class _FormularioCuidadoSheetState extends State<_FormularioCuidadoSheet> {
   final _observacaoController = TextEditingController();
 
-String _tipoSelecionado = 'Banho e higiene';
-DateTime? _dataInicio;
-DateTime? _dataFim;
-TimeOfDay? _horario;
+  String _tipoSelecionado = 'Banho e higiene';
+  DateTime? _dataInicio;
+  DateTime? _dataFim;
+  TimeOfDay? _horario;
 
   @override
   void initState() {
@@ -5898,8 +6293,8 @@ TimeOfDay? _horario;
     if (cuidado != null) {
       _tipoSelecionado = cuidado.tipo;
 
-_dataInicio = cuidado.dataInicio;
-_dataFim = cuidado.dataFim;
+      _dataInicio = cuidado.dataInicio;
+      _dataFim = cuidado.dataFim;
 
       _observacaoController.text = cuidado.observacao;
 
@@ -5952,94 +6347,89 @@ _dataFim = cuidado.dataFim;
   }
 
   Future<void> _selecionarDataInicio() async {
-  final data = await showDatePicker(
-    context: context,
-    initialDate: _dataInicio ?? DateTime.now(),
-    firstDate: DateTime.now(),
-    lastDate: DateTime.now().add(
-      const Duration(days: 365),
-    ),
-  );
+    final data = await showDatePicker(
+      context: context,
+      initialDate: _dataInicio ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(
+        const Duration(days: 365),
+      ),
+    );
 
-  if (data != null) {
-    setState(() {
-      _dataInicio = data;
+    if (data != null) {
+      setState(() {
+        _dataInicio = data;
 
-      if (_dataFim != null && _dataFim!.isBefore(data)) {
+        if (_dataFim != null && _dataFim!.isBefore(data)) {
+          _dataFim = data;
+        }
+      });
+    }
+  }
+
+  Future<void> _selecionarDataFim() async {
+    final data = await showDatePicker(
+      context: context,
+      initialDate: _dataFim ?? _dataInicio ?? DateTime.now(),
+      firstDate: _dataInicio ?? DateTime.now(),
+      lastDate: DateTime.now().add(
+        const Duration(days: 365),
+      ),
+    );
+
+    if (data != null) {
+      setState(() {
         _dataFim = data;
-      }
-    });
+      });
+    }
   }
-}
 
-Future<void> _selecionarDataFim() async {
-  final data = await showDatePicker(
-    context: context,
-    initialDate: _dataFim ?? _dataInicio ?? DateTime.now(),
-    firstDate: _dataInicio ?? DateTime.now(),
-    lastDate: DateTime.now().add(
-      const Duration(days: 365),
-    ),
-  );
-
-  if (data != null) {
-    setState(() {
-      _dataFim = data;
-    });
-  }
-}
-
-
-
-Future<void> _salvar() async {
-  if (_dataInicio == null || _dataFim == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Selecione a data de início e a data de fim.',
+  Future<void> _salvar() async {
+    if (_dataInicio == null || _dataFim == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selecione a data de início e a data de fim.',
+          ),
         ),
-      ),
-    );
-    return;
-  }
+      );
+      return;
+    }
 
-  if (_horario == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Selecione um horário.'),
-      ),
-    );
-    return;
-  }
+    if (_horario == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione um horário.'),
+        ),
+      );
+      return;
+    }
 
-  final horarioFormatado = _horario!.format(context);
+    final horarioFormatado = _horario!.format(context);
     final cuidadoExistente = widget.cuidado;
 
-if (cuidadoExistente == null) {
-  final cuidado = Cuidado(
-    tipo: _tipoSelecionado,
-    horario: horarioFormatado,
-    frequencia: 'diaria',
-    dataInicio: _dataInicio,
-    dataFim: _dataFim,
-    observacao: _observacaoController.text.trim(),
-  );
+    if (cuidadoExistente == null) {
+      final cuidado = Cuidado(
+        tipo: _tipoSelecionado,
+        horario: horarioFormatado,
+        frequencia: 'diaria',
+        dataInicio: _dataInicio,
+        dataFim: _dataFim,
+        observacao: _observacaoController.text.trim(),
+      );
 
-  await context.read<AppState>().addCuidado(cuidado);
-} else {
+      await context.read<AppState>().addCuidado(cuidado);
+    } else {
       final cuidadoAtualizado = cuidadoExistente.copyWith(
-        
-  tipo: _tipoSelecionado,
-  horario: horarioFormatado,
-  frequencia: 'diaria',
-  dataInicio: _dataInicio,
-  dataFim: _dataFim,
-  observacao: _observacaoController.text.trim(),
-);
+        tipo: _tipoSelecionado,
+        horario: horarioFormatado,
+        frequencia: 'diaria',
+        dataInicio: _dataInicio,
+        dataFim: _dataFim,
+        observacao: _observacaoController.text.trim(),
+      );
 
-      await context
-          .read<AppState>()
-          .updateCuidado(cuidadoAtualizado);
+      await context.read<AppState>().updateCuidado(cuidadoAtualizado);
     }
 
     if (mounted) {
@@ -6062,17 +6452,13 @@ if (cuidadoExistente == null) {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              widget.cuidado == null
-                  ? 'Adicionar cuidado'
-                  : 'Editar cuidado',
+              widget.cuidado == null ? 'Adicionar cuidado' : 'Editar cuidado',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 20),
-
             Text(
               'Tipo de cuidado',
               style: GoogleFonts.poppins(
@@ -6080,9 +6466,7 @@ if (cuidadoExistente == null) {
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 6),
-
             DropdownButtonFormField<String>(
               value: _tipoSelecionado,
               decoration: const InputDecoration(
@@ -6104,77 +6488,65 @@ if (cuidadoExistente == null) {
                 }
               },
             ),
-
-const SizedBox(height: 16),
-
-Text(
-  'Data de início',
-  style: GoogleFonts.poppins(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-  ),
-),
-
-const SizedBox(height: 6),
-
-InkWell(
-  onTap: _selecionarDataInicio,
-  child: InputDecorator(
-    decoration: const InputDecoration(
-      border: OutlineInputBorder(),
-      suffixIcon: Icon(Icons.calendar_today_outlined),
-    ),
-    child: Text(
-      _dataInicio == null
-          ? 'Selecionar data de início'
-          : '${_dataInicio!.day.toString().padLeft(2, '0')}/'
-            '${_dataInicio!.month.toString().padLeft(2, '0')}/'
-            '${_dataInicio!.year}',
-    ),
-  ),
-),
-
-const SizedBox(height: 16),
-
-Text(
-  'Data de fim',
-  style: GoogleFonts.poppins(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-  ),
-),
-
-const SizedBox(height: 6),
-
-InkWell(
-  onTap: _selecionarDataFim,
-  child: InputDecorator(
-    decoration: const InputDecoration(
-      border: OutlineInputBorder(),
-      suffixIcon: Icon(Icons.calendar_today_outlined),
-    ),
-    child: Text(
-      _dataFim == null
-          ? 'Selecionar data de fim'
-          : '${_dataFim!.day.toString().padLeft(2, '0')}/'
-            '${_dataFim!.month.toString().padLeft(2, '0')}/'
-            '${_dataFim!.year}',
-    ),
-  ),
-),
-
-const SizedBox(height: 16),
-
-Text(
-  'Horário',
+            const SizedBox(height: 16),
+            Text(
+              'Data de início',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 6),
-
+            InkWell(
+              onTap: _selecionarDataInicio,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today_outlined),
+                ),
+                child: Text(
+                  _dataInicio == null
+                      ? 'Selecionar data de início'
+                      : '${_dataInicio!.day.toString().padLeft(2, '0')}/'
+                          '${_dataInicio!.month.toString().padLeft(2, '0')}/'
+                          '${_dataInicio!.year}',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Data de fim',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: _selecionarDataFim,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today_outlined),
+                ),
+                child: Text(
+                  _dataFim == null
+                      ? 'Selecionar data de fim'
+                      : '${_dataFim!.day.toString().padLeft(2, '0')}/'
+                          '${_dataFim!.month.toString().padLeft(2, '0')}/'
+                          '${_dataFim!.year}',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Horário',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
             InkWell(
               onTap: _selecionarHorario,
               child: InputDecorator(
@@ -6189,9 +6561,7 @@ Text(
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
             Text(
               'Observação',
               style: GoogleFonts.poppins(
@@ -6199,9 +6569,7 @@ Text(
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 6),
-
             TextField(
               controller: _observacaoController,
               maxLines: 3,
@@ -6210,9 +6578,7 @@ Text(
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 24),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

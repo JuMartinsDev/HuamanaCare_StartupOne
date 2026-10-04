@@ -22,6 +22,31 @@ class ChatTab extends StatefulWidget {
 class _ChatTabState extends State<ChatTab> {
   late String _canal;
 
+String _canalFirestore(
+  AppState state,
+) {
+  switch (_canal) {
+    case 'familia':
+      return state.canalFamilia;
+
+    case 'cuidador':
+      return state.canalCuidadorPaciente;
+
+    case 'familiar':
+      return state
+              .canalPacienteFamiliarUsuarioAtual ??
+          '';
+
+    case 'milo':
+      return state
+              .canalMiloUsuarioAtual ??
+          '';
+
+    default:
+      return '';
+  }
+}
+
   @override
   void initState() {
     super.initState();
@@ -52,12 +77,17 @@ class _ChatTabState extends State<ChatTab> {
 
     final state = context.read<AppState>();
 
-    final idMensagemUsuario =
-        'u${DateTime.now().millisecondsSinceEpoch}';
+    final canalFirestore = _canalFirestore(state);
+
+    if (canalFirestore.isEmpty) {
+      return;
+    }
+
+    final idMensagemUsuario = 'u${DateTime.now().millisecondsSinceEpoch}';
 
     try {
       await state.addMensagem(
-        _canal,
+        canalFirestore,
         Mensagem(
           id: idMensagemUsuario,
           texto: txt,
@@ -100,7 +130,7 @@ class _ChatTabState extends State<ChatTab> {
         debugPrint('[ChatTab] Salvando resposta do Milo...');
 
         await state.addMensagem(
-          _canal,
+          canalFirestore,
           Mensagem(
             id: 'a${DateTime.now().millisecondsSinceEpoch}',
             texto: resposta,
@@ -125,7 +155,7 @@ class _ChatTabState extends State<ChatTab> {
 
         try {
           await state.addMensagem(
-            _canal,
+            canalFirestore,
             Mensagem(
               id: 'a${DateTime.now().millisecondsSinceEpoch}',
               texto:
@@ -208,44 +238,65 @@ class _ChatTabState extends State<ChatTab> {
     );
   }
 
-  String _nomeChat(AppState state) {
-    switch (_canal) {
-      case 'cuidador':
-        final nomeCuidador = state.cuidadorNome;
+String _nomeChat(AppState state) {
+  switch (_canal) {
+    case 'cuidador':
+      final nomeCuidador = state.cuidadorNome;
 
-        if (nomeCuidador != null &&
-            nomeCuidador.trim().isNotEmpty) {
-          return nomeCuidador;
-        }
+      if (nomeCuidador != null &&
+          nomeCuidador.trim().isNotEmpty) {
+        return nomeCuidador;
+      }
 
-        if (state.paciente.cuidadorNome.trim().isNotEmpty) {
-          return state.paciente.cuidadorNome;
-        }
+      if (state.paciente.cuidadorNome.trim().isNotEmpty) {
+        return state.paciente.cuidadorNome;
+      }
 
-        return 'Cuidador';
+      return 'Cuidador';
 
-      case 'milo':
-        return 'Milo';
+    case 'familiar':
+      return 'Familiar';
 
-      case 'familia':
-      default:
-        return 'Família';
-    }
+    case 'milo':
+      return 'Milo';
+
+    case 'familia':
+      return 'Família';
+
+    default:
+      return 'Chat';
   }
+}
 
-  String _subtituloChat() {
-    switch (_canal) {
-      case 'cuidador':
-        return 'Cuidador';
+String _subtituloChat(
+  AppState state,
+) {
+  switch (_canal) {
+    case 'cuidador':
+      return 'Cuidador';
 
-      case 'milo':
-        return 'Assistente virtual';
+    case 'familiar':
+      if (state.familiaresVinculados.isNotEmpty) {
+        final nome =
+            state.familiaresVinculados.first['nome'] ?? '';
 
-      case 'familia':
-      default:
-        return 'Grupo da família';
-    }
+        if (nome.trim().isNotEmpty) {
+          return nome;
+        }
+      }
+
+      return 'Familiar vinculado';
+
+    case 'milo':
+      return 'Assistente virtual';
+
+    case 'familia':
+      return 'Grupo da família';
+
+    default:
+      return '';
   }
+}
 
   Widget _cabecalhoChat(AppState state) {
     return Padding(
@@ -259,12 +310,12 @@ class _ChatTabState extends State<ChatTab> {
               color: const Color(0xFFE0F4F1),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              _canal == 'familia'
-                  ? Icons.groups_rounded
-                  : _canal == 'cuidador'
-                      ? Icons.person_rounded
-                      : Icons.smart_toy_rounded,
+child: Icon(
+  _canal == 'familia'
+      ? Icons.groups_rounded
+      : _canal == 'milo'
+          ? Icons.smart_toy_rounded
+          : Icons.person_rounded,
               color: AppTheme.primary,
               size: 23,
             ),
@@ -286,7 +337,7 @@ class _ChatTabState extends State<ChatTab> {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  _subtituloChat(),
+                    _subtituloChat(state),
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
@@ -303,7 +354,13 @@ class _ChatTabState extends State<ChatTab> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final msgs = state.mensagens(_canal);
+    final canalFirestore = _canalFirestore(state);
+
+    final msgs = canalFirestore.isEmpty
+        ? <Mensagem>[]
+        : state.mensagens(
+            canalFirestore,
+          );
 
     for (final m in msgs) {
       debugPrint(
@@ -329,22 +386,36 @@ class _ChatTabState extends State<ChatTab> {
         child: Column(
           children: [
             _cabecalhoChat(state),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                children: [
-                  _canalChip('Família', 'familia'),
-                  const SizedBox(width: 8),
-                  _canalChip('Cuidador', 'cuidador'),
-                  const SizedBox(width: 8),
-                  _canalChip('Milo', 'milo'),
-                ],
-              ),
+  children: [
+    _canalChip(
+      'Família',
+      'familia',
+    ),
+    const SizedBox(width: 5),
+
+    _canalChip(
+      'Cuidador',
+      'cuidador',
+    ),
+    const SizedBox(width: 5),
+
+    _canalChip(
+      'Familiar',
+      'familiar',
+    ),
+    const SizedBox(width: 5),
+
+    _canalChip(
+      'Milo',
+      'milo',
+    ),
+  ],
+),
             ),
-
             const SizedBox(height: 8),
-
             Expanded(
               child: msgs.isEmpty
                   ? Center(
@@ -368,8 +439,7 @@ class _ChatTabState extends State<ChatTab> {
                       itemBuilder: (_, i) {
                         final mensagem = msgs[i];
 
-                        final mostrarData =
-                            i == 0 ||
+                        final mostrarData = i == 0 ||
                             !_mesmoDia(
                               msgs[i - 1],
                               mensagem,
@@ -389,7 +459,6 @@ class _ChatTabState extends State<ChatTab> {
                       },
                     ),
             ),
-
             _barra(),
           ],
         ),
@@ -415,14 +484,10 @@ class _ChatTabState extends State<ChatTab> {
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: on
-                ? const Color(0xFFFDF6E3)
-                : AppTheme.surface,
+            color: on ? const Color(0xFFFDF6E3) : AppTheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: on
-                  ? const Color(0xFFEFE2B6)
-                  : AppTheme.divider,
+              color: on ? const Color(0xFFEFE2B6) : AppTheme.divider,
             ),
           ),
           child: Text(
@@ -430,9 +495,7 @@ class _ChatTabState extends State<ChatTab> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: on
-                  ? AppTheme.accent
-                  : AppTheme.textLight,
+              color: on ? AppTheme.accent : AppTheme.textLight,
             ),
           ),
         ),
@@ -521,8 +584,7 @@ class _Bubble extends StatelessWidget {
     final eu = !m.recebido;
 
     return Align(
-      alignment:
-          eu ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: eu ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(
           bottom: 10,
@@ -532,13 +594,10 @@ class _Bubble extends StatelessWidget {
           vertical: 10,
         ),
         constraints: BoxConstraints(
-          maxWidth:
-              MediaQuery.of(context).size.width * 0.72,
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
         ),
         decoration: BoxDecoration(
-          color: eu
-              ? AppTheme.primary
-              : const Color(0xFFE0F4F1),
+          color: eu ? AppTheme.primary : const Color(0xFFE0F4F1),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -563,26 +622,19 @@ class _Bubble extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: m.isMilo
-                        ? AppTheme.primary
-                        : AppTheme.textSecondary,
+                    color: m.isMilo ? AppTheme.primary : AppTheme.textSecondary,
                   ),
                 ),
               ),
-
             Text(
               m.texto,
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 height: 1.3,
-                color: eu
-                    ? Colors.white
-                    : AppTheme.textPrimary,
+                color: eu ? Colors.white : AppTheme.textPrimary,
               ),
             ),
-
             const SizedBox(height: 4),
-
             Align(
               alignment: Alignment.bottomRight,
               child: Text(

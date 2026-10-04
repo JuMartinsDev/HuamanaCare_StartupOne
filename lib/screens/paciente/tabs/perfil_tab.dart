@@ -57,11 +57,15 @@ class _PerfilTabState extends State<PerfilTab> {
       },
     );
 
-    if (!mounted || confirmar != true) return;
+    if (!mounted || confirmar != true) {
+      return;
+    }
 
     await context.read<AppState>().logout();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     context.go('/login');
   }
@@ -73,17 +77,24 @@ class _PerfilTabState extends State<PerfilTab> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
+        padding: const EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Cabeçalho ──────────────────────────────────────────────
+            // ============================================================
+            // CABEÇALHO
+            // ============================================================
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Perfil',
+                  'Meu perfil',
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -94,123 +105,186 @@ class _PerfilTabState extends State<PerfilTab> {
                   onPressed: () {
                     context.push('/editar-perfil');
                   },
+                  tooltip: 'Editar perfil',
                   icon: const Icon(
                     Icons.edit_outlined,
                     color: AppTheme.primary,
-                    size: 22,
                   ),
-                  tooltip: 'Editar perfil',
                 ),
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // ── Identificação ─────────────────────────────────────────
+            // ============================================================
+            // IDENTIFICAÇÃO
+            // ============================================================
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.textPrimary.withValues(alpha: 0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: AppTheme.textPrimary.withValues(
+                      alpha: 0.06,
+                    ),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
                 children: [
                   GestureDetector(
-  onTap: () async {
-    await context.read<AppState>().selecionarFotoPerfil();
-  },
-  child: Stack(
-    clipBehavior: Clip.none,
-    children: [
-      Container(
-        width: 58,
-        height: 58,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppTheme.primary,
-          image: p.fotoPerfilUrl.isNotEmpty
-              ? DecorationImage(
-                  image: NetworkImage(p.fotoPerfilUrl),
-                  fit: BoxFit.cover,
-                )
-              : null,
-        ),
-        child: p.fotoPerfilUrl.isEmpty
-            ? const Icon(
-                Icons.person_outline,
-                color: Colors.white,
-                size: 30,
-              )
-            : null,
-      ),
-      Positioned(
-        right: -2,
-        bottom: -2,
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.primary,
-          ),
-          child: const Icon(
-            Icons.camera_alt_outlined,
-            color: Colors.white,
-            size: 13,
-          ),
-        ),
-      ),
-    ],
-  ),
-),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    onTap: () async {
+                      await context
+                          .read<AppState>()
+                          .selecionarFotoPerfil();
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        Text(
-                          p.nome.isEmpty ? 'Paciente' : p.nome,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                        Container(
+                          width: 82,
+                          height: 82,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppTheme.primary,
+                            image: p.fotoPerfilUrl.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(
+                                      p.fotoPerfilUrl,
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
+                          child: p.fotoPerfilUrl.isEmpty
+                              ? const Icon(
+                                  Icons.person_outline,
+                                  color: Colors.white,
+                                  size: 40,
+                                )
+                              : null,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          p.id.isEmpty ? '' : 'ID: ${p.id}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 15,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Text(
+                    p.nome.isEmpty
+                        ? 'Paciente'
+                        : p.nome,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    p.idade > 0
+                        ? '${p.idade} anos'
+                        : 'Perfil do paciente',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+
+                  if (p.id.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'ID: ${p.id}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context.push('/editar-perfil');
+                      },
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        'Editar informações',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // ── Código de vínculo ─────────────────────────────────────
+            // ============================================================
+            // RESUMO DE SAÚDE
+            // ============================================================
+
+            _ResumoSaudePerfil(
+              tipoSanguineo: p.tipoSanguineo,
+              condicaoSaude: p.condicaoSaude,
+              alergias: p.alergias,
+            ),
+
+            const SizedBox(height: 18),
+
+            // ============================================================
+            // CÓDIGO DE VÍNCULO
+            // ============================================================
+
             _CardCodigoVinculo(
               codigo: state.codigoVinculo,
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
 
-            // ── Abas ──────────────────────────────────────────────────
+            // ============================================================
+            // ABAS
+            // ============================================================
+
             Container(
               height: 46,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: AppTheme.inputFill,
                 borderRadius: BorderRadius.circular(12),
@@ -221,66 +295,275 @@ class _PerfilTabState extends State<PerfilTab> {
                     label: 'Informações',
                     selecionada: _abaSelecionada == 0,
                     onTap: () {
-                      setState(() => _abaSelecionada = 0);
+                      setState(() {
+                        _abaSelecionada = 0;
+                      });
                     },
                   ),
                   _TabButton(
                     label: 'Histórico',
                     selecionada: _abaSelecionada == 1,
                     onTap: () {
-                      setState(() => _abaSelecionada = 1);
+                      setState(() {
+                        _abaSelecionada = 1;
+                      });
                     },
                   ),
                   _TabButton(
                     label: 'Documentos',
                     selecionada: _abaSelecionada == 2,
                     onTap: () {
-                      setState(() => _abaSelecionada = 2);
+                      setState(() {
+                        _abaSelecionada = 2;
+                      });
                     },
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // ── Conteúdo da aba ───────────────────────────────────────
-            if (_abaSelecionada == 0)
-              _InformacoesPaciente(p: p)
-            else if (_abaSelecionada == 1)
+            // ============================================================
+            // CONTEÚDO DAS ABAS
+            // ============================================================
+
+            if (_abaSelecionada == 0) ...[
+              _InformacoesPaciente(
+                p: p,
+              ),
+
+              const SizedBox(height: 16),
+
+              const _CardRedeCuidado(),
+            ] else if (_abaSelecionada == 1)
               const _Historico()
             else
               const _Documentos(),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
-            // ── Cuidador ──────────────────────────────────────────────
-            if (_abaSelecionada == 0) _CardRedeCuidado(),
+            // ============================================================
+            // SAIR
+            // ============================================================
 
-            const SizedBox(height: 12),
-
-// ── Sair ──────────────────────────────────────────────────
-const SizedBox(height: 24),
-
-SizedBox(
-  width: double.infinity,
-  child: OutlinedButton.icon(
-    onPressed: _confirmarSaida,
-    icon: const Icon(
-      Icons.logout,
-      size: 18,
-    ),
-    label: Text(
-      'Sair',
-      style: GoogleFonts.poppins(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  ),
-),         
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _confirmarSaida,
+                icon: const Icon(
+                  Icons.logout,
+                  size: 18,
+                ),
+                label: Text(
+                  'Sair da conta',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ResumoSaudePerfil extends StatelessWidget {
+  final String tipoSanguineo;
+  final String condicaoSaude;
+  final String alergias;
+
+  const _ResumoSaudePerfil({
+    required this.tipoSanguineo,
+    required this.condicaoSaude,
+    required this.alergias,
+  });
+
+  String _valorOuPadrao(
+    String valor,
+  ) {
+    return valor.trim().isEmpty
+        ? 'Não informado'
+        : valor.trim();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.primary.withValues(
+            alpha: 0.12,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.favorite_outline,
+                  color: AppTheme.primary,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Resumo de saúde',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Informações importantes do paciente',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _ResumoSaudeItem(
+                  icon: Icons.bloodtype_outlined,
+                  titulo: 'Tipo sanguíneo',
+                  valor: _valorOuPadrao(
+                    tipoSanguineo,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ResumoSaudeItem(
+                  icon:
+                      Icons.medical_information_outlined,
+                  titulo: 'Condição',
+                  valor: _valorOuPadrao(
+                    condicaoSaude,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          _ResumoSaudeItem(
+            icon: Icons.warning_amber_outlined,
+            titulo: 'Alergias',
+            valor: _valorOuPadrao(
+              alergias,
+            ),
+            larguraTotal: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResumoSaudeItem extends StatelessWidget {
+  final IconData icon;
+  final String titulo;
+  final String valor;
+  final bool larguraTotal;
+
+  const _ResumoSaudeItem({
+    required this.icon,
+    required this.titulo,
+    required this.valor,
+    this.larguraTotal = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: larguraTotal
+          ? double.infinity
+          : null,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: AppTheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    color:
+                        AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  valor,
+                  maxLines: larguraTotal
+                      ? 3
+                      : 2,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight:
+                        FontWeight.w600,
+                    color:
+                        AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -447,7 +730,8 @@ class _CardCodigoVinculo extends StatelessWidget {
 // Aba de informações
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _InformacoesPaciente extends StatelessWidget {
+class _InformacoesPaciente
+    extends StatelessWidget {
   final dynamic p;
 
   const _InformacoesPaciente({
@@ -456,48 +740,60 @@ class _InformacoesPaciente extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _InfoCard(
-      title: 'Informações pessoais',
+    return Column(
       children: [
-        _InfoRow(
-          label: 'Data de nascimento',
-          value: p.dataNascimento,
+        _InfoCard(
+          title: 'Dados pessoais',
+          children: [
+            _InfoRow(
+              label: 'Data de nascimento',
+              value: p.dataNascimento,
+            ),
+            _InfoRow(
+              label: 'Sexo',
+              value: p.sexo,
+            ),
+            _InfoRow(
+              label: 'Estado civil',
+              value: p.estadoCivil,
+            ),
+            _InfoRow(
+              label: 'Telefone',
+              value: p.telefone,
+            ),
+            _InfoRow(
+              label: 'Endereço',
+              value: p.endereco,
+            ),
+          ],
         ),
-        _InfoRow(
-          label: 'Sexo',
-          value: p.sexo,
-        ),
-        _InfoRow(
-          label: 'Estado civil',
-          value: p.estadoCivil,
-        ),
-        _InfoRow(
-          label: 'Endereço',
-          value: p.endereco,
-        ),
-        _InfoRow(
-          label: 'Telefone',
-          value: p.telefone,
-        ),
-        _InfoRow(
-          label: 'Tipo sanguíneo',
-          value: p.tipoSanguineo,
-        ),
-        _InfoRow(
-          label: 'Condição de saúde',
-          value: p.condicaoSaude,
-        ),
-        _InfoRow(
-          label: 'Alergias',
-          value: p.alergias,
-        ),
-        _InfoRow(
-          label: 'Dispositivos',
-          value: p.dispositivos,
-        ),
-        _InfoRow(
-          label: 'Observações',
-          value: p.observacoes,
+
+        const SizedBox(height: 16),
+
+        _InfoCard(
+          title: 'Informações de saúde',
+          children: [
+            _InfoRow(
+              label: 'Tipo sanguíneo',
+              value: p.tipoSanguineo,
+            ),
+            _InfoRow(
+              label: 'Condição de saúde',
+              value: p.condicaoSaude,
+            ),
+            _InfoRow(
+              label: 'Alergias',
+              value: p.alergias,
+            ),
+            _InfoRow(
+              label: 'Dispositivos',
+              value: p.dispositivos,
+            ),
+            _InfoRow(
+              label: 'Observações',
+              value: p.observacoes,
+            ),
+          ],
         ),
       ],
     );
@@ -983,11 +1279,16 @@ class _EditarDocumentosDialogState
 // Card do cuidador
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _CardRedeCuidado extends StatelessWidget {
+class _CardRedeCuidado
+    extends StatelessWidget {
   const _CardRedeCuidado();
 
-  Future<void> _abrirWhatsApp(BuildContext context) async {
-    final uri = Uri.parse('https://wa.me/');
+  Future<void> _abrirWhatsApp(
+    BuildContext context,
+  ) async {
+    final uri = Uri.parse(
+      'https://wa.me/',
+    );
 
     try {
       final abriu = await launchUrl(
@@ -996,23 +1297,29 @@ class _CardRedeCuidado extends StatelessWidget {
       );
 
       if (!abriu && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
           SnackBar(
             content: Text(
               'Não foi possível abrir o WhatsApp.',
               style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
+                fontWeight:
+                    FontWeight.w600,
               ),
             ),
             backgroundColor: Colors.white,
-            behavior: SnackBarBehavior.floating,
+            behavior:
+                SnackBarBehavior.floating,
           ),
         );
       }
     } catch (_) {
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           content: Text(
             'Não foi possível abrir o WhatsApp.',
@@ -1021,7 +1328,8 @@ class _CardRedeCuidado extends StatelessWidget {
             ),
           ),
           backgroundColor: Colors.white,
-          behavior: SnackBarBehavior.floating,
+          behavior:
+              SnackBarBehavior.floating,
         ),
       );
     }
@@ -1029,29 +1337,91 @@ class _CardRedeCuidado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
+    final state =
+        context.watch<AppState>();
     final p = state.paciente;
 
     return _InfoCard(
-      title: 'Rede de Cuidado',
+      title: 'Minha rede de cuidado',
       children: [
         // ========================================================
         // CUIDADOR
         // ========================================================
-        Text(
-          'Cuidador',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
+
+        Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppTheme.primary
+                    .withValues(
+                  alpha: 0.10,
+                ),
+                borderRadius:
+                    BorderRadius.circular(11),
+              ),
+              child: const Icon(
+                Icons
+                    .health_and_safety_outlined,
+                size: 20,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Cuidador',
+                style:
+                    GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight:
+                      FontWeight.w700,
+                  color:
+                      AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            if (state.temCuidador)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary
+                      .withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    20,
+                  ),
+                ),
+                child: Text(
+                  'Vinculado',
+                  style:
+                      GoogleFonts.poppins(
+                    fontSize: 9,
+                    fontWeight:
+                        FontWeight.w600,
+                    color:
+                        AppTheme.primary,
+                  ),
+                ),
+              ),
+          ],
         ),
-        const SizedBox(height: 8),
+
+        const SizedBox(height: 12),
 
         if (state.temCuidador) ...[
           _InfoRow(
             label: 'Nome',
-            value: state.cuidadorNome ?? 'Cuidador',
+            value:
+                state.cuidadorNome ??
+                    'Cuidador',
           ),
           _InfoRow(
             label: 'Turno',
@@ -1061,76 +1431,165 @@ class _CardRedeCuidado extends StatelessWidget {
             label: 'Carga horária',
             value: p.cuidadorCarga,
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Cuidador vinculado',
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primary,
-              ),
-            ),
-          ),
         ] else ...[
           Text(
             'Nenhum cuidador vinculado.',
             style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.black54,
+              fontSize: 12,
+              color:
+                  AppTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: () => _abrirWhatsApp(context),
-            icon: const Icon(Icons.chat_outlined, size: 18),
+            onPressed: () {
+              _abrirWhatsApp(context);
+            },
+            icon: const Icon(
+              Icons.chat_outlined,
+              size: 18,
+            ),
             label: Text(
-              'Compartilhar pelo WhatsApp',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              'Compartilhar código',
+              style:
+                  GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight:
+                    FontWeight.w600,
               ),
             ),
           ),
         ],
 
-        const SizedBox(height: 20),
+        const Padding(
+          padding:
+              EdgeInsets.symmetric(
+            vertical: 16,
+          ),
+          child: Divider(
+            height: 1,
+          ),
+        ),
 
         // ========================================================
         // FAMILIARES
         // ========================================================
-        Text(
-          'Familiares',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
 
-        if (state.familiaresVinculados.isEmpty)
+        Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppTheme.primary
+                    .withValues(
+                  alpha: 0.10,
+                ),
+                borderRadius:
+                    BorderRadius.circular(11),
+              ),
+              child: const Icon(
+                Icons.people_outline,
+                size: 20,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Familiares',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight:
+                    FontWeight.w700,
+                color:
+                    AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        if (state
+            .familiaresVinculados
+            .isEmpty)
           Text(
             'Nenhum familiar vinculado.',
             style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: Colors.black54,
+              fontSize: 12,
+              color:
+                  AppTheme.textSecondary,
             ),
           )
         else
-          ...state.familiaresVinculados.map(
-            (familiar) => _InfoRow(
-              label: 'Nome',
-              value: familiar['nome'] ?? 'Familiar',
-            ),
+          ...state.familiaresVinculados
+              .map(
+            (familiar) {
+              final nome =
+                  familiar['nome'] ??
+                      'Familiar';
+
+              return Container(
+                margin:
+                    const EdgeInsets.only(
+                  bottom: 8,
+                ),
+                padding:
+                    const EdgeInsets.all(
+                  11,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      AppTheme.background,
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 16,
+                      backgroundColor:
+                          AppTheme.primary,
+                      child: Icon(
+                        Icons
+                            .person_outline,
+                        color:
+                            Colors.white,
+                        size: 17,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Expanded(
+                      child: Text(
+                        nome,
+                        style:
+                            GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight:
+                              FontWeight
+                                  .w600,
+                          color: AppTheme
+                              .textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Familiar',
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 9,
+                        color: AppTheme
+                            .textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
       ],
     );

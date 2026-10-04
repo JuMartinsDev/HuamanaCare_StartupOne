@@ -553,7 +553,7 @@ return SafeArea(
                         CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Olá, ${p.nome.split(' ').first} !',
+                        'Olá, ${p.nome.trim().isEmpty ? 'Paciente' : p.nome.trim().split(' ').first}!',
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -616,7 +616,7 @@ return SafeArea(
                       ),
                       child: Row(
                         children: [
-                          _avatar(56),
+                          _avatar(p, 56),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -694,14 +694,15 @@ return SafeArea(
                         ),
                       ),
                       Text(
-                        'Ver tudo',
+                        '${atividadesDoDia.length} '
+                        '${atividadesDoDia.length == 1 ? 'item hoje' : 'itens hoje'}',
                         style:
                             GoogleFonts.poppins(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight:
                               FontWeight.w600,
                           color:
-                              AppTheme.accent,
+                              AppTheme.textSecondary,
                         ),
                       ),
                     ],
@@ -741,9 +742,10 @@ return SafeArea(
                         Icons.notifications_none_rounded,
                     titulo: 'Alertas',
                     sub: totalAlertas == 0
-                        ? 'Nenhum alerta'
-                        : '$totalAlertas '
-                            '${totalAlertas == 1 ? 'alerta' : 'alertas'}',
+                        ? 'Nenhuma situação exige atenção'
+                        : totalAlertas == 1
+                            ? '1 situação precisa de atenção'
+                            : '$totalAlertas situações precisam de atenção',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -754,10 +756,26 @@ return SafeArea(
                     },
                   ),
 
+                  const SizedBox(height: 10),
+
+                  // =========================
+                  // PRÓXIMO COMPROMISSO
+                  // =========================
+
+                  _ResumoRow(
+                    icone: Icons.event_outlined,
+                    titulo: 'Próximo compromisso',
+                    sub: proximoCompromisso == null
+                        ? 'Nenhum compromisso futuro'
+                        : '${proximoCompromisso.titulo} • '
+                            '${proximoCompromisso.dia} ${proximoCompromisso.mesAbrev}'
+                            '${proximoCompromisso.horario.trim().isEmpty ? '' : ' • ${proximoCompromisso.horario}'}',
+                  ),
+
                   const SizedBox(height: 12),
 
                   // =========================
-                  // MINHA ROTINA
+                  // ROTINA DE MEDICAMENTOS
                   // =========================
                   Container(
                     width: double.infinity,
@@ -776,13 +794,13 @@ return SafeArea(
                           children: [
                             Icon(
                               Icons.check_circle_outline,
-                              color: const Color.fromARGB(255, 5, 6, 6),
+                              color: AppTheme.primary,
                               size: 22,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Minha rotina',
+                                'Rotina de medicamentos',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -827,6 +845,29 @@ return SafeArea(
                         ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // =========================
+                  // ATIVIDADES DE HOJE
+                  // =========================
+
+                  _AtividadesHojeCard(
+                    coposAgua: state.coposAguaHoje,
+                    passos: state.passosHoje,
+                    atividadesConcluidas:
+                        state.atividadesConcluidasHoje,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const PacienteHome(
+                            abaInicial: 1,
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                       const SizedBox(height: 12),
@@ -1106,20 +1147,41 @@ return SafeArea(
                                             ),
                                           ),
                                           const SizedBox(height: 3),
-                                        Text(
-                                          detalhe,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            fontWeight: naoRegistrado
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
-                                            color: naoRegistrado
-                                                ? Colors.orange
-                                                : concluido
-                                                    ? Colors.green
-                                                    : AppTheme.textSecondary,
+                                          Text(
+                                            ehMedicamento
+                                                ? 'Medicamento'
+                                                : 'Compromisso',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 9,
+                                              fontWeight:
+                                                  FontWeight.w600,
+                                              color: cor,
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(height: 5),
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: cor.withValues(
+                                                alpha: 0.10,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              detalhe,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 9,
+                                                fontWeight:
+                                                    FontWeight.w600,
+                                                color: cor,
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1162,7 +1224,7 @@ return SafeArea(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.lightbulb_outline_rounded,
+                        Icons.auto_awesome_rounded,
                         color: AppTheme.primary,
                         size: 22,
                       ),
@@ -1172,7 +1234,7 @@ return SafeArea(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Dica de hoje',
+                              'Milo recomenda',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -1453,19 +1515,276 @@ return SafeArea(
   // AVATAR
   // =========================
 
-  static Widget _avatar(double s) {
+  static Widget _avatar(
+    Paciente paciente,
+    double s,
+  ) {
     return Container(
       width: s,
       height: s,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppTheme.primary,
+        image: paciente.fotoPerfilUrl.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(
+                  paciente.fotoPerfilUrl,
+                ),
+                fit: BoxFit.cover,
+              )
+            : null,
       ),
-      child: const Icon(
-        Icons.person,
-        color: Colors.white,
-        size: 26,
+      child: paciente.fotoPerfilUrl.isEmpty
+          ? const Icon(
+              Icons.person,
+              color: Colors.white,
+              size: 26,
+            )
+          : null,
+    );
+  }
+}
+
+
+// =====================================================
+// ATIVIDADES DE HOJE
+// =====================================================
+
+class _AtividadesHojeCard extends StatelessWidget {
+  final int coposAgua;
+  final int passos;
+  final int atividadesConcluidas;
+  final VoidCallback onTap;
+
+  const _AtividadesHojeCard({
+    required this.coposAgua,
+    required this.passos,
+    required this.atividadesConcluidas,
+    required this.onTap,
+  });
+
+  static const int _metaAgua = 6;
+  static const int _metaPassos = 5000;
+  static const int _metaAtividades = 3;
+
+  double _progresso(
+    int valor,
+    int meta,
+  ) {
+    if (meta <= 0) {
+      return 0;
+    }
+
+    return (valor / meta).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.divider,
+        ),
       ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.grid_view_rounded,
+                color: AppTheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Atividades de hoje',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight:
+                        FontWeight.w700,
+                    color:
+                        AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onTap,
+                child: Text(
+                  'Ver atividades',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight:
+                        FontWeight.w600,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          _AtividadeProgressoItem(
+            icon: Icons.water_drop_outlined,
+            titulo: 'Água',
+            detalhe:
+                '$coposAgua de $_metaAgua copos',
+            valor: _progresso(
+              coposAgua,
+              _metaAgua,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          _AtividadeProgressoItem(
+            icon: Icons.directions_walk_outlined,
+            titulo: 'Passos',
+            detalhe:
+                '$passos de $_metaPassos passos',
+            valor: _progresso(
+              passos,
+              _metaPassos,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          _AtividadeProgressoItem(
+            icon: Icons.psychology_outlined,
+            titulo: 'Atividades cognitivas',
+            detalhe:
+                '$atividadesConcluidas de $_metaAtividades concluídas',
+            valor: _progresso(
+              atividadesConcluidas,
+              _metaAtividades,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AtividadeProgressoItem
+    extends StatelessWidget {
+  final IconData icon;
+  final String titulo;
+  final String detalhe;
+  final double valor;
+
+  const _AtividadeProgressoItem({
+    required this.icon,
+    required this.titulo,
+    required this.detalhe,
+    required this.valor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final percentual =
+        (valor * 100).round();
+
+    return Row(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(
+              alpha: 0.10,
+            ),
+            borderRadius:
+                BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 19,
+            color: AppTheme.primary,
+          ),
+        ),
+
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      titulo,
+                      style:
+                          GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight:
+                            FontWeight.w600,
+                        color: AppTheme
+                            .textPrimary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$percentual%',
+                    style:
+                        GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight:
+                          FontWeight.w700,
+                      color:
+                          AppTheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 3),
+
+              Text(
+                detalhe,
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  color:
+                      AppTheme.textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 7),
+
+              ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(20),
+                child:
+                    LinearProgressIndicator(
+                  value: valor,
+                  minHeight: 6,
+                  backgroundColor:
+                      AppTheme.divider,
+                  valueColor:
+                      const AlwaysStoppedAnimation<
+                          Color>(
+                    AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1544,11 +1863,12 @@ class _ResumoRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: AppTheme.textLight,
-            ),
+            if (onTap != null)
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppTheme.textLight,
+              ),
           ],
         ),
       ),
