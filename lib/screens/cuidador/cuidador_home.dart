@@ -211,58 +211,10 @@ class _CuidadorInicioTab extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 20),
+                const _TimelineCuidador(),
 
-                Text(
-                  'Remédios',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                if (remedios.isEmpty)
-                  const _EmptyCard(
-                    icon: Icons.medication_outlined,
-                    texto: 'Nenhum remédio cadastrado.',
-                  )
-                else
-                  ...remedios.take(3).map(
-                        (remedio) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _RemedioResumoCard(
-                            remedio: remedio,
-                          ),
-                        ),
-                      ),
-
-                const SizedBox(height: 14),
-
-                Text(
-                  'Próximos compromissos',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                if (compromissos.isEmpty)
-                  const _EmptyCard(
-                    icon: Icons.calendar_month_outlined,
-                    texto: 'Nenhum compromisso cadastrado.',
-                  )
-                else
-                  ...compromissos.take(3).map(
-                        (compromisso) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _CompromissoResumoCard(
-                            compromisso: compromisso,
-                          ),
-                        ),
-                      ),
+                const SizedBox(height: 20),
+const _HistoricoAcompanhamentoCard(),
 
                 const SizedBox(height: 20),
 
@@ -300,6 +252,475 @@ class _CuidadorInicioTab extends StatelessWidget {
           paciente: paciente,
         );
       },
+    );
+  }
+}
+
+// =====================================================
+// TIMELINE DO CUIDADOR
+// =====================================================
+
+class _TimelineCuidador extends StatefulWidget {
+  const _TimelineCuidador();
+
+  @override
+  State<_TimelineCuidador> createState() =>
+      _TimelineCuidadorState();
+}
+
+class _TimelineCuidadorState extends State<_TimelineCuidador> {
+  int _filtroTimeline = 0;
+
+  DateTime _dataSemHorario(DateTime data) =>
+      DateTime(data.year, data.month, data.day);
+
+  int _converterHorarioEmMinutos(String horario) {
+    final partes = horario.split(':');
+    if (partes.length != 2) return 9999;
+
+    final hora = int.tryParse(partes[0]);
+    final minuto = int.tryParse(partes[1]);
+
+    if (hora == null ||
+        minuto == null ||
+        hora < 0 ||
+        hora > 23 ||
+        minuto < 0 ||
+        minuto > 59) {
+      return 9999;
+    }
+
+    return hora * 60 + minuto;
+  }
+
+  bool _estaNoPeriodo(
+    DateTime dia,
+    DateTime? inicio,
+    DateTime? fim,
+  ) {
+    final data = _dataSemHorario(dia);
+
+    final inicioValido = inicio == null ||
+        !_dataSemHorario(inicio).isAfter(data);
+
+    final fimValido = fim == null ||
+        !_dataSemHorario(fim).isBefore(data);
+
+    return inicioValido && fimValido;
+  }
+
+  List<Map<String, dynamic>> _montarAtividades({
+    required AppState state,
+    required DateTime hoje,
+    required DateTime agora,
+    required bool semanal,
+  }) {
+    final atividades = <Map<String, dynamic>>[];
+    final inicioSemana = hoje.subtract(
+      Duration(days: hoje.weekday - 1),
+    );
+
+    final quantidadeDias = semanal ? 7 : 1;
+
+    for (int i = 0; i < quantidadeDias; i++) {
+      final dia = _dataSemHorario(
+        semanal ? inicioSemana.add(Duration(days: i)) : hoje,
+      );
+
+      final ehHoje = dia == hoje;
+      final diaJaPassou = dia.isBefore(hoje);
+      final agoraMinutos = agora.hour * 60 + agora.minute;
+
+      // MEDICAMENTOS
+      for (final remedio in state.remedios) {
+        if (!_estaNoPeriodo(
+          dia,
+          remedio.dataInicio,
+          remedio.dataFim,
+        )) {
+          continue;
+        }
+
+        final minutos = _converterHorarioEmMinutos(
+          remedio.horario,
+        );
+
+        // O estado "tomado" só representa o dia atual.
+        final tomado = ehHoje && remedio.tomado;
+        final atrasado = ehHoje &&
+            !tomado &&
+            minutos != 9999 &&
+            minutos < agoraMinutos;
+
+        atividades.add({
+          'tipo': 'medicamento',
+          'titulo': remedio.nome,
+          'horario': remedio.horario,
+          'minutos': minutos,
+          'data': dia,
+          'concluido': tomado,
+          'naoRegistrado': atrasado || diaJaPassou,
+          'detalhe': tomado
+              ? 'Tomado'
+              : (atrasado || diaJaPassou)
+                  ? 'Não registrado'
+                  : 'Programado',
+        });
+      }
+
+      // COMPROMISSOS
+      for (final compromisso in state.compromissos) {
+        final dataCompromisso = compromisso.data;
+        if (dataCompromisso == null) continue;
+
+        if (_dataSemHorario(dataCompromisso) != dia) {
+          continue;
+        }
+
+        if (compromisso.status == 'cancelado') continue;
+
+        final local = compromisso.local.trim();
+        final concluido = compromisso.status == 'concluido';
+
+        atividades.add({
+          'tipo': 'compromisso',
+          'titulo': compromisso.titulo,
+          'horario': compromisso.horario,
+          'minutos': _converterHorarioEmMinutos(
+            compromisso.horario,
+          ),
+          'data': dia,
+          'concluido': concluido,
+          'naoRegistrado': false,
+          'detalhe': concluido
+              ? 'Concluído'
+              : (local.isEmpty ? 'Compromisso agendado' : local),
+        });
+      }
+
+      // CUIDADOS INTENSIVOS
+      for (final cuidado in state.cuidados) {
+        if (!cuidado.ativo) continue;
+
+        if (!_estaNoPeriodo(
+          dia,
+          cuidado.dataInicio,
+          cuidado.dataFim,
+        )) {
+          continue;
+        }
+
+        final concluido = cuidado.concluidoEm(dia);
+        final horario = cuidado.horario;
+
+        atividades.add({
+          'tipo': 'cuidado',
+          'titulo': cuidado.tipo,
+          'horario': horario,
+          'minutos': _converterHorarioEmMinutos(horario),
+          'data': dia,
+          'concluido': concluido,
+          'naoRegistrado': false,
+          'detalhe': concluido
+              ? 'Concluído'
+              : (cuidado.observacao.trim().isEmpty
+                  ? 'Cuidado pendente'
+                  : cuidado.observacao.trim()),
+          'cuidadoId': cuidado.id,
+        });
+      }
+    }
+
+    atividades.sort((a, b) {
+      final dataA = a['data'] as DateTime;
+      final dataB = b['data'] as DateTime;
+
+      final comparacaoData = dataA.compareTo(dataB);
+      if (comparacaoData != 0) return comparacaoData;
+
+      return (a['minutos'] as int).compareTo(
+        b['minutos'] as int,
+      );
+    });
+
+    return atividades;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final agora = DateTime.now();
+    final hoje = _dataSemHorario(agora);
+
+    final atividades = _montarAtividades(
+      state: state,
+      hoje: hoje,
+      agora: agora,
+      semanal: _filtroTimeline == 1,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                color: AppTheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _filtroTimeline == 0
+                      ? 'Linha do tempo de hoje'
+                      : 'Linha do tempo da semana',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _botaoFiltro('Hoje', 0),
+              const SizedBox(width: 8),
+              _botaoFiltro('Esta semana', 1),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (atividades.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  _filtroTimeline == 0
+                      ? 'Nenhuma atividade programada para hoje.'
+                      : 'Nenhuma atividade programada para esta semana.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...List.generate(atividades.length, (index) {
+              final atividade = atividades[index];
+              final tipo = atividade['tipo'] as String;
+              final titulo = atividade['titulo'] as String;
+              final horario = atividade['horario'] as String;
+              final detalhe = atividade['detalhe'] as String;
+              final data = atividade['data'] as DateTime;
+              final concluido = atividade['concluido'] as bool;
+              final naoRegistrado =
+                  atividade['naoRegistrado'] as bool? ?? false;
+
+              final cor = concluido
+                  ? Colors.green
+                  : naoRegistrado
+                      ? Colors.orange
+                      : tipo == 'medicamento'
+                          ? AppTheme.primary
+                          : tipo == 'cuidado'
+                              ? Colors.teal
+                              : Colors.blueGrey;
+
+              final mostrarCabecalho =
+                  _filtroTimeline == 1 &&
+                  (index == 0 ||
+                      !(atividades[index - 1]['data'] as DateTime)
+                          .isAtSameMomentAs(data));
+
+              final nomeDia = [
+                'SEGUNDA',
+                'TERÇA',
+                'QUARTA',
+                'QUINTA',
+                'SEXTA',
+                'SÁBADO',
+                'DOMINGO',
+              ][data.weekday - 1];
+
+              final nomeMes = [
+                'janeiro',
+                'fevereiro',
+                'março',
+                'abril',
+                'maio',
+                'junho',
+                'julho',
+                'agosto',
+                'setembro',
+                'outubro',
+                'novembro',
+                'dezembro',
+              ][data.month - 1];
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (mostrarCabecalho)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: index == 0 ? 0 : 18,
+                        bottom: 10,
+                      ),
+                      child: Text(
+                        '$nomeDia, ${data.day} DE ${nomeMes.toUpperCase()}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textSecondary,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        child: Column(
+                          children: [
+                            Text(
+                              horario.isEmpty ? '--:--' : horario,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: cor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            if (index < atividades.length - 1 &&
+                                (atividades[index + 1]['data']
+                                        as DateTime)
+                                    .isAtSameMomentAs(data))
+                              Container(
+                                width: 2,
+                                height: 48,
+                                color: AppTheme.divider,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.background,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      titulo,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                        decoration: concluido
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${tipo == 'medicamento' ? 'Medicamento' : tipo == 'cuidado' ? 'Cuidado' : 'Compromisso'} • $detalhe',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        fontWeight: naoRegistrado
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                        color: naoRegistrado
+                                            ? Colors.orange
+                                            : concluido
+                                                ? Colors.green
+                                                : AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (concluido)
+                                const Icon(
+                                  Icons.check_circle,
+                                  size: 18,
+                                  color: Colors.green,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _botaoFiltro(String texto, int valor) {
+    final selecionado = _filtroTimeline == valor;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _filtroTimeline = valor;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selecionado
+                ? AppTheme.primary
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            texto,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: selecionado
+                  ? Colors.white
+                  : AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -375,6 +796,11 @@ class _CuidadorRemediosTab extends StatelessWidget {
                             .read<AppState>()
                             .toggleRemedio(remedio.id);
                       },
+                      onConcluir: () async {
+                      await context
+                          .read<AppState>()
+                          .toggleRemedio(remedio.id);
+                    },
                     ),
                   ),
                 ),
@@ -856,20 +1282,47 @@ class _CuidadorCompromissosTab extends StatelessWidget {
                   (compromisso) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _CompromissoGerenciavelCard(
-                      compromisso: compromisso,
-                      onEditar: () {
-                        _abrirFormularioCompromisso(
-                          context,
-                          compromisso: compromisso,
+                    compromisso: compromisso,
+
+                    onEditar: () {
+                      _abrirFormularioCompromisso(
+                        context,
+                        compromisso: compromisso,
+                      );
+                    },
+
+                    onExcluir: () {
+                      _confirmarExclusao(
+                        context,
+                        compromisso,
+                      );
+                    },
+
+                    onConcluir: () async {
+                      final novoStatus =
+                          compromisso.status == 'concluido'
+                              ? 'pendente'
+                              : 'concluido';
+
+                      try {
+                        await context.read<AppState>().updateCompromisso(
+                          compromisso.copyWith(
+                            status: novoStatus,
+                          ),
                         );
-                      },
-                      onExcluir: () {
-                        _confirmarExclusao(
-                          context,
-                          compromisso,
+                      } catch (e) {
+                        if (!context.mounted) return;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Não foi possível atualizar o compromisso: $e',
+                            ),
+                          ),
                         );
-                      },
-                    ),
+                      }
+                    },
+                  ),
                   ),
                 ),
 
@@ -1300,11 +1753,14 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
   final Compromisso compromisso;
   final VoidCallback onEditar;
   final VoidCallback onExcluir;
+  final VoidCallback onConcluir;
 
   const _CompromissoGerenciavelCard({
     required this.compromisso,
     required this.onEditar,
     required this.onExcluir,
+    required this.onConcluir,
+
   });
 
   @override
@@ -1316,7 +1772,9 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.shade300,
+          color: compromisso.status == 'concluido'
+              ? Colors.green.shade200
+              : Colors.grey.shade300,
         ),
       ),
       child: Row(
@@ -1418,6 +1876,39 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
                   ],
                 ),
 
+                 const SizedBox(height: 10),
+
+                GestureDetector(
+                  onTap: onConcluir,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        compromisso.status == 'concluido'
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 19,
+                        color: compromisso.status == 'concluido'
+                            ? Colors.green
+                            : AppTheme.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        compromisso.status == 'concluido'
+                            ? 'Feito'
+                            : 'Marcar como feito',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: compromisso.status == 'concluido'
+                              ? Colors.green.shade700
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 if (compromisso.diaAbrev.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -1434,35 +1925,64 @@ class _CompromissoGerenciavelCard extends StatelessWidget {
           ),
 
           PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'editar') {
+            onSelected: (opcao) {
+              if (opcao == 'editar') {
                 onEditar();
-              } else if (value == 'excluir') {
+              } else if (opcao == 'excluir') {
                 onExcluir();
+              } else if (opcao == 'concluir') {
+                onConcluir();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'editar',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined),
-                    SizedBox(width: 10),
-                    Text('Editar'),
-                  ],
+              itemBuilder: (context) => [
+                const PopupMenuItem<String>(
+                  value: 'editar',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 19,
+                      ),
+                      SizedBox(width: 8),
+                      Text('Editar'),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'excluir',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline),
-                    SizedBox(width: 10),
-                    Text('Excluir'),
-                  ],
+
+                PopupMenuItem<String>(
+                  value: 'concluir',
+                  child: Row(
+                    children: [
+                      Icon(
+                        compromisso.status == 'concluido'
+                            ? Icons.undo_rounded
+                            : Icons.check_circle_outline,
+                        size: 19,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        compromisso.status == 'concluido'
+                            ? 'Marcar como pendente'
+                            : 'Marcar como feito',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                const PopupMenuItem<String>(
+                  value: 'excluir',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        size: 19,
+                      ),
+                      SizedBox(width: 8),
+                      Text('Excluir'),
+                    ],
+                  ),
+                ),
+              ],
           ),
         ],
       ),
@@ -1479,12 +1999,15 @@ class _RemedioGerenciavelCard extends StatelessWidget {
   final VoidCallback onEditar;
   final VoidCallback onExcluir;
   final VoidCallback onToggle;
+  final VoidCallback onConcluir;
 
   const _RemedioGerenciavelCard({
     required this.remedio,
     required this.onEditar,
     required this.onExcluir,
     required this.onToggle,
+    required this.onConcluir,
+
   });
 
   @override
@@ -2679,6 +3202,688 @@ class _CompromissoResumoCard extends StatelessWidget {
   }
 }
 
+class _HistoricoAcompanhamentoCard extends StatefulWidget {
+  const _HistoricoAcompanhamentoCard();
+
+  @override
+  State<_HistoricoAcompanhamentoCard> createState() =>
+      _HistoricoAcompanhamentoCardState();
+}
+
+class _HistoricoAcompanhamentoCardState
+    extends State<_HistoricoAcompanhamentoCard> {
+
+bool _mostrarHoje = true;
+bool _listaExpandida = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final historicos = state.historicoAtividades;
+
+    final agora = DateTime.now();
+
+    final inicioHoje = DateTime(
+      agora.year,
+      agora.month,
+      agora.day,
+    );
+
+    final inicioSemana = inicioHoje.subtract(
+      Duration(days: agora.weekday - 1),
+    );
+
+    final atividadesSemana = historicos.where((item) {
+      final data = item.dataRealizada;
+
+      if (data == null) {
+        return false;
+      }
+
+      return !data.isBefore(inicioSemana);
+    }).toList();
+
+    final total = atividadesSemana.length;
+
+final concluidas = atividadesSemana.where((item) {
+  final realizado = item.dataRealizada;
+  final previsto = item.dataPrevista;
+
+  if (realizado == null || previsto == null) {
+    return item.resultado == 'concluido';
+  }
+
+  final realizadoMinuto = DateTime(
+    realizado.year,
+    realizado.month,
+    realizado.day,
+    realizado.hour,
+    realizado.minute,
+  );
+
+  final previstoMinuto = DateTime(
+    previsto.year,
+    previsto.month,
+    previsto.day,
+    previsto.hour,
+    previsto.minute,
+  );
+
+  return !realizadoMinuto.isAfter(previstoMinuto);
+}).length;
+
+final atrasadas = atividadesSemana.where((item) {
+  final realizado = item.dataRealizada;
+  final previsto = item.dataPrevista;
+
+  if (realizado == null || previsto == null) {
+    return item.resultado == 'atrasado';
+  }
+
+  final realizadoMinuto = DateTime(
+    realizado.year,
+    realizado.month,
+    realizado.day,
+    realizado.hour,
+    realizado.minute,
+  );
+
+  final previstoMinuto = DateTime(
+    previsto.year,
+    previsto.month,
+    previsto.day,
+    previsto.hour,
+    previsto.minute,
+  );
+
+  return realizadoMinuto.isAfter(previstoMinuto);
+}).length;
+
+    final adesao = total == 0
+        ? 0
+        : ((concluidas + atrasadas) / total * 100).round();
+
+    final atividadesHoje = historicos.where((item) {
+      final data = item.dataRealizada;
+
+      if (data == null) {
+        return false;
+      }
+
+      return data.year == agora.year &&
+          data.month == agora.month &&
+          data.day == agora.day;
+    }).toList();
+
+    final atividadesExibidas =
+        _mostrarHoje ? atividadesHoje : atividadesSemana;
+
+    atividadesExibidas.sort(
+      (a, b) => (b.dataRealizada ?? b.data)
+          .compareTo(a.dataRealizada ?? a.data),
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.grey.shade300,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ======================================================
+          // CABEÇALHO
+          // ======================================================
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.insights_outlined,
+                  color: AppTheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Histórico e acompanhamento',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Resumo desta semana',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // ======================================================
+          // RESUMO
+          // ======================================================
+          Row(
+            children: [
+              Expanded(
+                child: _ResumoHistoricoItem(
+                  valor: '$total',
+                  titulo: 'Atividades',
+                  icone: Icons.list_alt_outlined,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ResumoHistoricoItem(
+                  valor: '$concluidas',
+                  titulo: 'No horário',
+                  icone: Icons.check_circle_outline,
+                  cor: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ResumoHistoricoItem(
+                  valor: '$atrasadas',
+                  titulo: 'Atrasadas',
+                  icone: Icons.schedule_outlined,
+                  cor: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ======================================================
+          // ADESÃO
+          // ======================================================
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Adesão',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              Text(
+                '$adesao%',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 7),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: adesao / 100,
+              minHeight: 7,
+              backgroundColor: Colors.grey.shade200,
+              valueColor:
+                  const AlwaysStoppedAnimation(
+                AppTheme.primary,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // ======================================================
+          // ABAS
+          // ======================================================
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _mostrarHoje = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _mostrarHoje
+                            ? AppTheme.surface
+                            : Colors.transparent,
+                        borderRadius:
+                            BorderRadius.circular(8),
+                        boxShadow: _mostrarHoje
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset:
+                                      const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Hoje',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _mostrarHoje
+                                ? AppTheme.primary
+                                : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _mostrarHoje = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: !_mostrarHoje
+                            ? AppTheme.surface
+                            : Colors.transparent,
+                        borderRadius:
+                            BorderRadius.circular(8),
+                        boxShadow: !_mostrarHoje
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                  offset:
+                                      const Offset(0, 1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Esta semana',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: !_mostrarHoje
+                                ? AppTheme.primary
+                                : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ======================================================
+          // LISTA DE ATIVIDADES
+          // ======================================================
+
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _mostrarHoje
+                      ? 'Atividades de hoje'
+                      : 'Atividades da semana',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _listaExpandida = !_listaExpandida;
+                  });
+                },
+                icon: Icon(
+                  _listaExpandida
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  color: AppTheme.primary,
+                ),
+                tooltip: _listaExpandida
+                    ? 'Recolher'
+                    : 'Expandir',
+              ),
+            ],
+          ),
+
+          if (_listaExpandida) ...[
+            const SizedBox(height: 4),
+
+            if (atividadesExibidas.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                ),
+                child: Text(
+                  _mostrarHoje
+                      ? 'Nenhuma atividade registrada hoje.'
+                      : 'Nenhuma atividade registrada nesta semana.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              )
+            else
+              ...atividadesExibidas.map(
+                (item) => _HistoricoAtividadeItem(
+                  item: item,
+                ),
+              ),
+          ],
+
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoricoAtividadeItem extends StatelessWidget {
+  final Historico item;
+
+  const _HistoricoAtividadeItem({
+    required this.item,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+final atrasado =
+    item.dataRealizada != null &&
+    item.dataPrevista != null &&
+    DateTime(
+          item.dataRealizada!.year,
+          item.dataRealizada!.month,
+          item.dataRealizada!.day,
+          item.dataRealizada!.hour,
+          item.dataRealizada!.minute,
+        ).isAfter(
+          DateTime(
+            item.dataPrevista!.year,
+            item.dataPrevista!.month,
+            item.dataPrevista!.day,
+            item.dataPrevista!.hour,
+            item.dataPrevista!.minute,
+          ),
+        );
+
+    final realizado = item.dataRealizada;
+    final previsto = item.dataPrevista;
+
+int? atrasoMinutos;
+
+if (realizado != null && previsto != null) {
+  final realizadoMinuto = DateTime(
+    realizado.year,
+    realizado.month,
+    realizado.day,
+    realizado.hour,
+    realizado.minute,
+  );
+
+  final previstoMinuto = DateTime(
+    previsto.year,
+    previsto.month,
+    previsto.day,
+    previsto.hour,
+    previsto.minute,
+  );
+
+  final diferenca =
+      realizadoMinuto.difference(previstoMinuto).inMinutes;
+
+  if (diferenca > 0) {
+    atrasoMinutos = diferenca;
+  }
+}
+
+    final cor = atrasado
+        ? Colors.orange
+        : Colors.green;
+
+    final icone = atrasado
+        ? Icons.schedule_outlined
+        : Icons.check_circle_outline;
+
+    String tipo;
+
+    switch (item.tipo) {
+      case 'medicamento':
+        tipo = 'Medicamento';
+        break;
+      case 'compromisso':
+        tipo = 'Compromisso';
+        break;
+      case 'cuidado':
+        tipo = 'Cuidado';
+        break;
+      default:
+        tipo = 'Atividade';
+    }
+
+    String formatarHora(DateTime? data) {
+      if (data == null) {
+        return '--:--';
+      }
+
+      return '${data.hour.toString().padLeft(2, '0')}:'
+          '${data.minute.toString().padLeft(2, '0')}';
+    }
+
+    String textoStatus;
+
+    if (atrasado) {
+    if (atrasoMinutos != null) {
+      final horas = atrasoMinutos ~/ 60;
+      final minutos = atrasoMinutos % 60;
+
+      if (horas > 0) {
+        textoStatus =
+            'Atrasado em ${horas}h${minutos > 0 ? ' ${minutos}min' : ''}';
+      } else {
+        textoStatus =
+            'Atrasado em ${minutos}min';
+      }
+    } else {
+      textoStatus = 'Atrasado';
+    }
+  } else {
+    textoStatus = 'Realizado no horário';
+  }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: cor.withValues(alpha: 0.20),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icone,
+            size: 20,
+            color: cor,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.titulo,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      tipo,
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: cor,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 4),
+
+                if (previsto != null)
+                  Text(
+                    'Previsto: ${formatarHora(previsto)}'
+                    '${realizado != null ? '  •  Realizado: ${formatarHora(realizado)}' : ''}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  textoStatus,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: cor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResumoHistoricoItem extends StatelessWidget {
+  final String valor;
+  final String titulo;
+  final IconData icone;
+  final Color? cor;
+
+  const _ResumoHistoricoItem({
+    required this.valor,
+    required this.titulo,
+    required this.icone,
+    this.cor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final corFinal = cor ?? AppTheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 12,
+        horizontal: 8,
+      ),
+      decoration: BoxDecoration(
+        color: corFinal.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icone,
+            size: 18,
+            color: corFinal,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            valor,
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 9,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ============================================================
 // SOS
 // ============================================================
@@ -3434,22 +4639,24 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                           ),
 
                         PopupMenuButton<String>(
-                          onSelected: (opcao) async {
-                            if (opcao == 'editar') {
-                              _mostrarFormularioCuidado(
-                                context,
-                                cuidado: cuidado,
-                              );
-                            }
+                        onSelected: (opcao) {
+                          if (opcao == 'editar') {
+                            _mostrarFormularioCuidado(
+                              context,
+                              cuidado: cuidado,
+                            );
+                          }
 
-                            if (opcao == 'excluir') {
-                              await context
-                                  .read<AppState>()
-                                  .removeCuidado(
-                                    cuidado.id,
-                                  );
-                            }
-                          },
+                          if (opcao == 'excluir') {
+                            final appState = context.read<AppState>();
+
+                            Future.microtask(() async {
+                              await appState.removeCuidado(
+                                cuidado.id,
+                              );
+                            });
+                          }
+                        },
                           itemBuilder: (context) => const [
                             PopupMenuItem(
                               value: 'editar',
@@ -3513,22 +4720,24 @@ class _CuidadosIntensivosCard extends StatelessWidget {
                   ),
 
                   trailing: PopupMenuButton<String>(
-                    onSelected: (opcao) async {
-                      if (opcao == 'editar') {
-                        _mostrarFormularioCuidado(
-                          context,
-                          cuidado: cuidado,
-                        );
-                      }
+                  onSelected: (opcao) {
+                    if (opcao == 'editar') {
+                      _mostrarFormularioCuidado(
+                        context,
+                        cuidado: cuidado,
+                      );
+                    }
 
-                      if (opcao == 'excluir') {
-                        await context
-                            .read<AppState>()
-                            .removeCuidado(
-                              cuidado.id,
-                            );
-                      }
-                    },
+                    if (opcao == 'excluir') {
+                      final appState = context.read<AppState>();
+
+                      Future.microtask(() async {
+                        await appState.removeCuidado(
+                          cuidado.id,
+                        );
+                      });
+                    }
+                  },
                     itemBuilder: (context) => const [
                       PopupMenuItem(
                         value: 'editar',

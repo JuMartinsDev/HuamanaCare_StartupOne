@@ -459,28 +459,42 @@ class Historico {
   final String descricao;
   final DateTime data;
 
+  final DateTime? dataPrevista;
+  final DateTime? dataRealizada;
+  final String resultado;
+  final String atividadeId;
+
   const Historico({
     this.id = '',
     required this.tipo,
     required this.titulo,
     required this.descricao,
     required this.data,
+    this.dataPrevista,
+    this.dataRealizada,
+    this.resultado = '',
+    this.atividadeId = '',
   });
 
-  // Firestore -> Flutter
   factory Historico.fromMap(
     String id,
     Map<String, dynamic> map,
   ) {
-    DateTime data;
+    DateTime? converterData(dynamic valor) {
+      if (valor == null) return null;
 
-    final valorData = map['data'];
+      if (valor is Timestamp) {
+        return valor.toDate();
+      }
 
-    if (valorData is String && valorData.isNotEmpty) {
-      data = DateTime.tryParse(valorData) ?? DateTime.now();
-    } else {
-      data = DateTime.now();
+      if (valor is String && valor.isNotEmpty) {
+        return DateTime.tryParse(valor);
+      }
+
+      return null;
     }
+
+    final data = converterData(map['data']) ?? DateTime.now();
 
     return Historico(
       id: id,
@@ -488,17 +502,27 @@ class Historico {
       titulo: map['titulo'] ?? '',
       descricao: map['descricao'] ?? '',
       data: data,
+      dataPrevista: converterData(
+        map['dataPrevista'],
+      ),
+      dataRealizada: converterData(
+        map['dataRealizada'],
+      ),
+      resultado: map['resultado'] ?? '',
+      atividadeId: map['atividadeId'] ?? '',
     );
   }
 
-  // Flutter -> Firestore
   Map<String, dynamic> toMap() {
     return {
       'tipo': tipo,
       'titulo': titulo,
       'descricao': descricao,
       'data': data.toIso8601String(),
+      'dataPrevista': dataPrevista?.toIso8601String(),
+      'dataRealizada': dataRealizada?.toIso8601String(),
+      'resultado': resultado,
+      'atividadeId': atividadeId,
     };
   }
 }
-

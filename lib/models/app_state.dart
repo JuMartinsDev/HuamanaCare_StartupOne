@@ -174,6 +174,11 @@ List<Cuidado> get cuidados => List.unmodifiable(_cuidados);
   List<Historico> get historico =>
       List.unmodifiable(_historico);
 
+  List<Historico> _historicoAtividades = [];
+
+List<Historico> get historicoAtividades =>
+    List.unmodifiable(_historicoAtividades);
+
   // ============================================================
   // MENSAGENS
   // ============================================================
@@ -557,11 +562,17 @@ DateTime? get sosDataHora => _sosDataHora;
       pacienteId,
     );
 
-    await _carregarCuidados(pacienteId);
+await _carregarHistorico(
+  pacienteId,
+);
 
-    await _carregarHistorico(
-      pacienteId,
-    );
+await _carregarHistoricoAtividades(
+  pacienteId,
+);
+
+await _carregarCuidados(
+  pacienteId,
+);
   }
 
   Future<void> _carregarCuidados(String pacienteId) async {
@@ -570,6 +581,32 @@ DateTime? get sosDataHora => _sosDataHora;
       .doc(pacienteId)
       .collection('cuidados')
       .get();
+
+  debugPrint(
+    '========== INICIO CUIDADOS ==========',
+  );
+
+  debugPrint(
+    'PACIENTE DOS CUIDADOS: $pacienteId',
+  );
+
+  debugPrint(
+    'TOTAL DE CUIDADOS: ${snapshot.docs.length}',
+  );
+
+  for (final doc in snapshot.docs) {
+    debugPrint(
+      'DOCUMENTO CUIDADO: ${doc.id}',
+    );
+
+    debugPrint(
+      'DADOS CUIDADO: ${doc.data()}',
+    );
+  }
+
+  debugPrint(
+    '=========== FIM CUIDADOS ===========',
+  );
 
   _cuidados = snapshot.docs
       .map(
@@ -600,12 +637,24 @@ Future<void> addCuidado(Cuidado cuidado) async {
   final docRef = colecao.doc();
 
   final cuidadoSalvo = cuidado.copyWith(
-    id: docRef.id,
-  );
+  id: docRef.id,
+);
 
-  await docRef.set(
-    cuidadoSalvo.toMap(),
-  );
+debugPrint(
+  'SALVANDO CUIDADO: ${docRef.id}',
+);
+
+debugPrint(
+  'DADOS: ${cuidadoSalvo.toMap()}',
+);
+
+debugPrint(
+  'PACIENTE: $pacienteId',
+);
+
+await docRef.set(
+  cuidadoSalvo.toMap(),
+);
 
   _cuidados.add(cuidadoSalvo);
 
@@ -655,6 +704,52 @@ Future<void> removeCuidado(String id) async {
     return;
   }
 
+  final historicoRef = _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades');
+
+  // Busca todos os históricos de cuidado
+  final historicosSnapshot = await historicoRef
+      .where('tipo', isEqualTo: 'cuidado')
+      .get();
+
+  // Descobre quais registros pertencem ao cuidado excluído
+final historicosParaExcluir =
+    historicosSnapshot.docs.where((doc) {
+  final dados = doc.data();
+
+  final atividadeId =
+      dados['atividadeId']?.toString() ?? '';
+
+  final pertencePeloCampo =
+      atividadeId == id;
+
+  final pertencePeloId =
+      doc.id.startsWith('cuidado-$id-');
+
+  return pertencePeloCampo || pertencePeloId;
+}).toList();
+
+  debugPrint(
+    'EXCLUINDO CUIDADO: $id',
+  );
+
+  debugPrint(
+    'HISTÓRICOS ENCONTRADOS: '
+    '${historicosParaExcluir.length}',
+  );
+
+  // Exclui os históricos do Firestore
+  for (final doc in historicosParaExcluir) {
+    debugPrint(
+      'EXCLUINDO HISTÓRICO: ${doc.id}',
+    );
+
+    await doc.reference.delete();
+  }
+
+  // Exclui o cuidado
   await _firestore
       .collection('pacientes')
       .doc(pacienteId)
@@ -662,11 +757,18 @@ Future<void> removeCuidado(String id) async {
       .doc(id)
       .delete();
 
-  _cuidados.removeWhere(
-    (cuidado) => cuidado.id == id,
-  );
+  // Atualiza os cuidados na memória
+_cuidados.removeWhere(
+  (cuidado) => cuidado.id == id,
+);
 
-  notifyListeners();
+// Recarrega o histórico diretamente do Firestore
+// para manter a tela sincronizada com os dados persistidos.
+await _carregarHistoricoAtividades(
+  pacienteId,
+);
+
+notifyListeners();
 }
 
 Future<void> concluirCuidado(
@@ -690,7 +792,15 @@ Future<void> concluirCuidado(
   }
 
   final cuidado = _cuidados[index];
-  final cuidadoAtualizado = cuidado.marcarConcluidoEm(data);
+
+  final jaConcluido = cuidado.concluidoEm(data);
+
+  if (jaConcluido) {
+    return;
+  }
+
+  final cuidadoAtualizado =
+      cuidado.marcarConcluidoEm(data);
 
   await _firestore
       .collection('pacientes')
@@ -698,10 +808,53 @@ Future<void> concluirCuidado(
       .collection('cuidados')
       .doc(cuidadoId)
       .update({
-    'conclusoesPorData': cuidadoAtualizado.conclusoesPorData,
+    'conclusoesPorData':
+        cuidadoAtualizado.conclusoesPorData,
   });
 
   _cuidados[index] = cuidadoAtualizado;
+
+  final dataRealizada = DateTime.now();
+
+  final dataPrevista = _criarDataPrevista(
+    data,
+    cuidado.horario,
+  );
+
+  final estaAtrasado =
+      dataPrevista != null &&
+      DateTime(
+        dataRealizada.year,
+        dataRealizada.month,
+        dataRealizada.day,
+        dataRealizada.hour,
+        dataRealizada.minute,
+      ).isAfter(
+        DateTime(
+          dataPrevista.year,
+          dataPrevista.month,
+          dataPrevista.day,
+          dataPrevista.hour,
+          dataPrevista.minute,
+        ),
+      );
+
+  await _registrarHistoricoAtividade(
+    pacienteId: pacienteId,
+    tipo: 'cuidado',
+    titulo: cuidado.tipo,
+    descricao:
+        cuidado.observacao.isNotEmpty
+            ? cuidado.observacao
+            : '${cuidado.tipo} concluído.',
+    atividadeId: cuidado.id,
+    dataPrevista: dataPrevista,
+    dataRealizada: dataRealizada,
+    resultado:
+        estaAtrasado
+            ? 'atrasado'
+            : 'concluido',
+  );
 
   notifyListeners();
 }
@@ -976,6 +1129,59 @@ Future<void> concluirCuidado(
       );
     }
 
+
+Future<void> _registrarHistoricoAtividade({
+  required String pacienteId,
+  required String tipo,
+  required String titulo,
+  required String descricao,
+  required String atividadeId,
+  DateTime? dataPrevista,
+  DateTime? dataRealizada,
+  String resultado = 'concluido',
+}) async {
+  final colecao = _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades');
+
+  final dataBase =
+      dataRealizada ??
+      dataPrevista ??
+      DateTime.now();
+
+  final docId =
+      '$tipo-${atividadeId}-${_chaveData(dataBase)}';
+
+  final historico = Historico(
+    id: docId,
+    tipo: tipo,
+    titulo: titulo,
+    descricao: descricao,
+    data: dataRealizada ?? DateTime.now(),
+    dataPrevista: dataPrevista,
+    dataRealizada: dataRealizada,
+    resultado: resultado,
+    atividadeId: atividadeId,
+  );
+
+  await colecao
+      .doc(docId)
+      .set(historico.toMap());
+
+      _historicoAtividades.removeWhere(
+  (item) => item.id == docId,
+);
+
+_historicoAtividades.add(historico);
+
+_historicoAtividades.sort(
+  (a, b) => b.data.compareTo(a.data),
+);
+
+notifyListeners();
+}
+
     // ==========================================================
     // VÍNCULO DO FAMILIAR / CUIDADOR
     // ==========================================================
@@ -1152,39 +1358,93 @@ Future<void> concluirCuidado(
         .toList();
   }
 
-  Future<void> toggleRemedio(String id) async {
-    final pacienteId = pacienteIdDados;
+Future<void> toggleRemedio(String id) async {
+  final pacienteId = pacienteIdDados;
 
-    if (pacienteId == null) {
-      return;
-    }
+  if (pacienteId == null) {
+    return;
+  }
 
-    final index = _remedios.indexWhere(
-      (remedio) => remedio.id == id,
+  final index = _remedios.indexWhere(
+    (remedio) => remedio.id == id,
+  );
+
+  if (index == -1) {
+    return;
+  }
+
+  final remedio = _remedios[index];
+
+  remedio.tomado = !remedio.tomado;
+  remedio.dataTomado =
+      remedio.tomado ? DateTime.now() : null;
+
+  notifyListeners();
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('remedios')
+      .doc(id)
+      .set(
+    remedio.toMap(),
+    SetOptions(merge: true),
+  );
+
+  if (remedio.tomado) {
+    final agora = remedio.dataTomado!;
+
+    final dataPrevista = _criarDataPrevista(
+      agora,
+      remedio.horario,
     );
 
-    if (index == -1) {
-      return;
-    }
+    final estaAtrasado =
+        dataPrevista != null &&
+        agora.isAfter(dataPrevista);
 
-    final remedio = _remedios[index];
+    await _registrarHistoricoAtividade(
+      pacienteId: pacienteId,
+      tipo: 'medicamento',
+      titulo: remedio.nome,
+      descricao:
+          '${remedio.nome} marcado como tomado.',
+      atividadeId: remedio.id,
+      dataPrevista: dataPrevista,
+      dataRealizada: agora,
+      resultado:
+          estaAtrasado
+              ? 'atrasado'
+              : 'concluido',
+    );
+  } else {
+    final agora = DateTime.now();
 
-    remedio.tomado = !remedio.tomado;
-    remedio.dataTomado =
-        remedio.tomado ? DateTime.now() : null;
-
-    notifyListeners();
-
-    await _firestore
-        .collection('pacientes')
-        .doc(pacienteId)
-        .collection('remedios')
-        .doc(id)
-        .set(
-      remedio.toMap(),
-      SetOptions(merge: true),
+    await _removerHistoricoAtividade(
+      pacienteId: pacienteId,
+      tipo: 'medicamento',
+      atividadeId: remedio.id,
+      data: agora,
     );
   }
+}
+
+int? _calcularAtrasoMinutos(Historico item) {
+  if (item.dataPrevista == null ||
+      item.dataRealizada == null) {
+    return null;
+  }
+
+  final diferenca = item.dataRealizada!
+      .difference(item.dataPrevista!)
+      .inMinutes;
+
+  if (diferenca <= 0) {
+    return 0;
+  }
+
+  return diferenca;
+}
 
   Future<void> addRemedio(
     Remedio remedio,
@@ -1367,17 +1627,17 @@ Future<void> concluirCuidado(
       );
     }
 
-    final compromissoSalvo =
-        Compromisso(
-      id: docRef.id,
-      titulo: compromisso.titulo,
-      horario: compromisso.horario,
-      local: compromisso.local,
-      dia: compromisso.dia,
-      mesAbrev: compromisso.mesAbrev,
-      diaAbrev: compromisso.diaAbrev,
-      data: compromisso.data,
-    );
+final compromissoSalvo = Compromisso(
+  id: docRef.id,
+  titulo: compromisso.titulo,
+  horario: compromisso.horario,
+  local: compromisso.local,
+  dia: compromisso.dia,
+  mesAbrev: compromisso.mesAbrev,
+  diaAbrev: compromisso.diaAbrev,
+  data: compromisso.data,
+  status: compromisso.status,
+);
 
     _compromissos.add(
       compromissoSalvo,
@@ -1386,47 +1646,103 @@ Future<void> concluirCuidado(
     notifyListeners();
   }
 
-  Future<void> updateCompromisso(
-    Compromisso compromisso,
-  ) async {
-    final pacienteId =
-        pacienteIdDados;
+Future<void> updateCompromisso(
+  Compromisso compromisso,
+) async {
+  final pacienteId = pacienteIdDados;
 
-    if (pacienteId == null) {
-      throw Exception(
-        'Nenhum paciente vinculado.',
-      );
-    }
-
-    if (compromisso.id.isEmpty) {
-      throw Exception(
-        'Não foi possível atualizar o compromisso sem ID.',
-      );
-    }
-
-    await _firestore
-        .collection('pacientes')
-        .doc(pacienteId)
-        .collection('compromissos')
-        .doc(compromisso.id)
-        .set(
-      compromisso.toMap(),
-      SetOptions(merge: true),
+  if (pacienteId == null) {
+    throw Exception(
+      'Nenhum paciente vinculado.',
     );
-
-    final index =
-        _compromissos.indexWhere(
-      (item) =>
-          item.id == compromisso.id,
-    );
-
-    if (index != -1) {
-      _compromissos[index] =
-          compromisso;
-    }
-
-    notifyListeners();
   }
+
+  if (compromisso.id.isEmpty) {
+    throw Exception(
+      'Não foi possível atualizar o compromisso sem ID.',
+    );
+  }
+
+  final index = _compromissos.indexWhere(
+    (item) => item.id == compromisso.id,
+  );
+
+  final compromissoAnterior =
+      index != -1
+          ? _compromissos[index]
+          : null;
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('compromissos')
+      .doc(compromisso.id)
+      .set(
+    compromisso.toMap(),
+    SetOptions(merge: true),
+  );
+
+  if (index != -1) {
+    _compromissos[index] = compromisso;
+  }
+
+  final acabouDeConcluir =
+      compromisso.status == 'concluido' &&
+      compromissoAnterior?.status != 'concluido';
+
+  final voltouParaPendente =
+      compromisso.status != 'concluido' &&
+      compromissoAnterior?.status == 'concluido';
+
+  if (acabouDeConcluir) {
+    final dataRealizada = DateTime.now();
+
+    final dataBase =
+        compromisso.data ??
+        DateTime.now();
+
+    final dataPrevista = _criarDataPrevista(
+      dataBase,
+      compromisso.horario,
+    );
+
+    final estaAtrasado =
+        dataPrevista != null &&
+        dataRealizada.isAfter(dataPrevista);
+
+    await _registrarHistoricoAtividade(
+      pacienteId: pacienteId,
+      tipo: 'compromisso',
+      titulo: compromisso.titulo,
+      descricao:
+          compromisso.local.isNotEmpty
+              ? 'Compromisso concluído em ${compromisso.local}.'
+              : 'Compromisso concluído.',
+      atividadeId: compromisso.id,
+      dataPrevista: dataPrevista,
+      dataRealizada: dataRealizada,
+      resultado:
+          estaAtrasado
+              ? 'atrasado'
+              : 'concluido',
+    );
+  }
+
+  if (voltouParaPendente) {
+    final dataBase =
+        compromisso.data ??
+        DateTime.now();
+
+    await _removerHistoricoAtividade(
+      pacienteId: pacienteId,
+      tipo: 'compromisso',
+      atividadeId: compromisso.id,
+      data: dataBase,
+    );
+  }
+
+  notifyListeners();
+}
 
   Future<void> removeCompromisso(
     String id,
@@ -1482,6 +1798,68 @@ Future<void> concluirCuidado(
     );
   }
 
+
+Future<void> _carregarHistoricoAtividades(
+  String pacienteId,
+) async {
+  final historicoSnapshot = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades')
+      .get();
+
+  final cuidadosSnapshot = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('cuidados')
+      .get();
+
+  final idsCuidadosAtuais = cuidadosSnapshot.docs
+      .map((doc) => doc.id)
+      .toSet();
+
+  final historicos = historicoSnapshot.docs
+      .map(
+        (doc) => Historico.fromMap(
+          doc.id,
+          doc.data(),
+        ),
+      )
+      .where((historico) {
+        // Para medicamentos e compromissos,
+        // mantém o histórico normalmente.
+        if (historico.tipo != 'cuidado') {
+          return true;
+        }
+
+        // Para cuidados, só mostra no histórico
+        // se o cuidado ainda existir.
+        return idsCuidadosAtuais.contains(
+          historico.atividadeId,
+        );
+      })
+      .toList();
+
+  _historicoAtividades = historicos;
+
+  _historicoAtividades.sort(
+    (a, b) => b.data.compareTo(a.data),
+  );
+
+  debugPrint(
+    'HISTÓRICOS APÓS FILTRO: '
+    '${_historicoAtividades.length}',
+  );
+
+  for (final historico in _historicoAtividades) {
+    debugPrint(
+      'HISTÓRICO MANTIDO: '
+      '${historico.titulo} | '
+      '${historico.atividadeId}',
+    );
+  }
+}
+
   Future<void> addHistorico(
     Historico item,
   ) async {
@@ -1526,8 +1904,10 @@ Future<void> concluirCuidado(
       data: data ?? DateTime.now(),
     );
 
+
     final docRef =
         colecao.doc();
+        
 
     await docRef.set(
       historico.toMap(),
@@ -1552,6 +1932,63 @@ Future<void> concluirCuidado(
       );
     }
   }
+
+
+    String _chaveData(DateTime data) {
+      return '${data.year.toString().padLeft(4, '0')}-'
+          '${data.month.toString().padLeft(2, '0')}-'
+          '${data.day.toString().padLeft(2, '0')}';
+    }
+
+  Future<void> _registrarHistoricoAtividade({
+  required String pacienteId,
+  required String tipo,
+  required String titulo,
+  required String descricao,
+  required String atividadeId,
+  DateTime? dataPrevista,
+  DateTime? dataRealizada,
+  String resultado = 'concluido',
+}) async {
+  final colecao = _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades');
+
+  final historico = Historico(
+    tipo: tipo,
+    titulo: titulo,
+    descricao: descricao,
+    data: dataRealizada ?? DateTime.now(),
+    dataPrevista: dataPrevista,
+    dataRealizada: dataRealizada,
+    resultado: resultado,
+    atividadeId: atividadeId,
+  );
+
+  final docRef = colecao.doc();
+
+  await docRef.set(
+    historico.toMap(),
+  );
+}
+
+Future<void> _removerHistoricoAtividade({
+  required String pacienteId,
+  required String tipo,
+  required String atividadeId,
+  required DateTime data,
+}) async {
+  final docId =
+      '$tipo-${atividadeId}-${_chaveData(data)}';
+
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades')
+      .doc(docId)
+      .delete();
+}
 
   // ============================================================
   // MENSAGENS
@@ -2625,6 +3062,7 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
     _remedios = [];
     _compromissos = [];
     _historico = [];
+    _historicoAtividades = [];
     _familiaresVinculados = [];
 
     _msgs['familia'] = [];
@@ -2718,3 +3156,33 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
   }
 }
 
+DateTime? _criarDataPrevista(
+  DateTime data,
+  String horario,
+) {
+  final partes = horario.split(':');
+
+  if (partes.length < 2) {
+    return null;
+  }
+
+  final hora = int.tryParse(partes[0]);
+  final minuto = int.tryParse(partes[1]);
+
+  if (hora == null ||
+      minuto == null ||
+      hora < 0 ||
+      hora > 23 ||
+      minuto < 0 ||
+      minuto > 59) {
+    return null;
+  }
+
+  return DateTime(
+    data.year,
+    data.month,
+    data.day,
+    hora,
+    minuto,
+  );
+}
