@@ -214,7 +214,11 @@ class _CuidadorInicioTab extends StatelessWidget {
                 const _TimelineCuidador(),
 
                 const SizedBox(height: 20),
-const _HistoricoAcompanhamentoCard(),
+                const _HistoricoAcompanhamentoCard(),
+
+                const SizedBox(height: 20),
+                const _AcompanhamentoCognitivoCard(),
+
 
                 const SizedBox(height: 20),
 
@@ -228,9 +232,11 @@ const _HistoricoAcompanhamentoCard(),
                 ),
                 const SizedBox(height: 12),
 
-                _SosCard(
-                  ativado: state.sosAtivado,
-                ),
+_SosCard(
+  ativado: state.sosAtivado,
+  status: state.sosStatus,
+  dataHora: state.sosDataHora,
+),
               ],
             ),
           ),
@@ -3637,6 +3643,741 @@ final atrasadas = atividadesSemana.where((item) {
   }
 }
 
+class _AcompanhamentoCognitivoCard extends StatelessWidget {
+  const _AcompanhamentoCognitivoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final resultados = state.resultadosAtividadesCognitivas;
+
+    if (resultados.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.psychology_outlined,
+                    color: AppTheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Acompanhamento cognitivo',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Nenhuma atividade cognitiva realizada ainda.',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final agora = DateTime.now();
+
+    // ============================================================
+    // RESULTADOS DE HOJE
+    // ============================================================
+
+    final resultadosHoje = resultados.where((resultado) {
+      return resultado.data.year == agora.year &&
+          resultado.data.month == agora.month &&
+          resultado.data.day == agora.day;
+    }).toList();
+
+    // ============================================================
+    // RESULTADOS DOS ÚLTIMOS 7 DIAS
+    // ============================================================
+
+    final inicioPeriodo = DateTime(
+      agora.year,
+      agora.month,
+      agora.day,
+    ).subtract(const Duration(days: 6));
+
+    final resultados7Dias = resultados.where((resultado) {
+      return !resultado.data.isBefore(inicioPeriodo) &&
+          !resultado.data.isAfter(agora);
+    }).toList();
+
+    final totalHoje = resultadosHoje.length;
+    final total7Dias = resultados7Dias.length;
+
+    // ============================================================
+    // MÉDIA DE HOJE
+    // ============================================================
+
+    final mediaHoje = resultadosHoje.isEmpty
+        ? 0.0
+        : resultadosHoje.fold<double>(
+              0,
+              (total, item) => total + item.pontuacao,
+            ) /
+            resultadosHoje.length;
+
+    // ============================================================
+    // MÉDIA DOS ÚLTIMOS 7 DIAS
+    // ============================================================
+
+    final media7Dias = resultados7Dias.isEmpty
+        ? 0.0
+        : resultados7Dias.fold<double>(
+              0,
+              (total, item) => total + item.pontuacao,
+            ) /
+            resultados7Dias.length;
+
+    // ============================================================
+    // TEMPO MÉDIO DOS ÚLTIMOS 7 DIAS
+    // ============================================================
+
+    final mediaTempo7Dias = resultados7Dias.isEmpty
+        ? 0.0
+        : resultados7Dias.fold<double>(
+              0,
+              (total, item) => total + item.tempoSegundos,
+            ) /
+            resultados7Dias.length;
+
+    // ============================================================
+    // ORDENAÇÃO
+    // ============================================================
+
+    final resultadosOrdenados = [...resultados7Dias]
+      ..sort((a, b) => a.data.compareTo(b.data));
+
+    final ultimosResultados = [...resultadosOrdenados]
+      ..sort((a, b) => b.data.compareTo(a.data));
+
+    final ultimos5 = ultimosResultados.take(5).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ======================================================
+          // CABEÇALHO
+          // ======================================================
+
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.psychology_outlined,
+                  color: AppTheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Acompanhamento cognitivo',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Hoje e últimos 7 dias',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ======================================================
+          // HOJE
+          // ======================================================
+
+          Text(
+            'Hoje',
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          if (resultadosHoje.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                'Nenhuma atividade cognitiva realizada hoje.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: _CognitivoResumoItem(
+                    valor: '$totalHoje',
+                    titulo: 'Atividades',
+                    icone: Icons.extension_outlined,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _CognitivoResumoItem(
+                    valor: '${mediaHoje.toStringAsFixed(0)}%',
+                    titulo: 'Média',
+                    icone: Icons.star_outline,
+                  ),
+                ),
+              ],
+            ),
+
+          const SizedBox(height: 22),
+
+          // ======================================================
+          // ÚLTIMOS 7 DIAS
+          // ======================================================
+
+          Text(
+            'Últimos 7 dias',
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Expanded(
+                child: _CognitivoResumoItem(
+                  valor: '$total7Dias',
+                  titulo: 'Atividades',
+                  icone: Icons.extension_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CognitivoResumoItem(
+                  valor: '${media7Dias.toStringAsFixed(0)}%',
+                  titulo: 'Pontuação média',
+                  icone: Icons.star_outline,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CognitivoResumoItem(
+                  valor: _formatarTempo(
+                    mediaTempo7Dias.round(),
+                  ),
+                  titulo: 'Tempo médio',
+                  icone: Icons.timer_outlined,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // ======================================================
+          // GRÁFICO
+          // ======================================================
+
+          Text(
+            'Evolução nos últimos 7 dias',
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            height: 180,
+            width: double.infinity,
+            child: resultados7Dias.length < 2
+                ? Center(
+                    child: Text(
+                      'Realize mais atividades para visualizar a evolução.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  )
+                : _CognitivoGrafico(
+                    resultados: resultadosOrdenados,
+                  ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ======================================================
+          // ÚLTIMAS ATIVIDADES
+          // ======================================================
+
+          Text(
+            'Últimas atividades',
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          if (ultimos5.isEmpty)
+            Text(
+              'Nenhuma atividade nos últimos 7 dias.',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            )
+          else
+            ...ultimos5.map(
+              (resultado) => _CognitivoResultadoItem(
+                resultado: resultado,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatarTempo(int segundos) {
+    final minutos = segundos ~/ 60;
+    final segundosRestantes = segundos % 60;
+
+    if (minutos == 0) {
+      return '${segundosRestantes}s';
+    }
+
+    return '${minutos}min';
+  }
+}
+
+class _CognitivoResumoItem extends StatelessWidget {
+  final String valor;
+  final String titulo;
+  final IconData icone;
+
+  const _CognitivoResumoItem({
+    required this.valor,
+    required this.titulo,
+    required this.icone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 14,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icone,
+            size: 20,
+            color: AppTheme.primary,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            valor,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CognitivoGrafico extends StatelessWidget {
+  final List<AtividadeCognitivaResultado> resultados;
+
+  const _CognitivoGrafico({
+    required this.resultados,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (resultados.length < 2) {
+      return Center(
+        child: Text(
+          'Realize mais uma atividade para visualizar a evolução.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    return CustomPaint(
+      painter: _CognitivoGraficoPainter(
+        resultados: resultados,
+      ),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _CognitivoGraficoPainter extends CustomPainter {
+  final List<AtividadeCognitivaResultado> resultados;
+
+  _CognitivoGraficoPainter({
+    required this.resultados,
+  });
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+    );
+
+    const esquerda = 32.0;
+    const direita = 8.0;
+    const topo = 10.0;
+    const baixo = 28.0;
+
+    final larguraGrafico =
+        size.width - esquerda - direita;
+
+    final alturaGrafico =
+        size.height - topo - baixo;
+
+    // Linhas horizontais de referência.
+    for (int i = 0; i <= 4; i++) {
+      final y =
+          topo +
+          alturaGrafico -
+          (alturaGrafico * i / 4);
+
+      canvas.drawLine(
+        Offset(esquerda, y),
+        Offset(size.width - direita, y),
+        gridPaint,
+      );
+
+      final valor = (i * 25).toString();
+
+      textPainter.text = TextSpan(
+        text: '$valor',
+        style: GoogleFonts.poppins(
+          fontSize: 9,
+          color: AppTheme.textSecondary,
+        ),
+      );
+
+      textPainter.layout();
+
+      textPainter.paint(
+        canvas,
+        Offset(
+          0,
+          y - textPainter.height / 2,
+        ),
+      );
+    }
+
+    // Linha da evolução.
+    final path = Path();
+
+    for (int i = 0; i < resultados.length; i++) {
+      final resultado = resultados[i];
+
+      final x = resultados.length == 1
+          ? esquerda
+          : esquerda +
+              larguraGrafico *
+                  i /
+                  (resultados.length - 1);
+
+      final pontuacao =
+          resultado.pontuacao.clamp(0, 100);
+
+      final y =
+          topo +
+          alturaGrafico -
+          (alturaGrafico *
+              pontuacao /
+              100);
+
+      final ponto = Offset(x, y);
+
+      if (i == 0) {
+        path.moveTo(
+          ponto.dx,
+          ponto.dy,
+        );
+      } else {
+        path.lineTo(
+          ponto.dx,
+          ponto.dy,
+        );
+      }
+    }
+
+    paint.color = AppTheme.primary;
+
+    canvas.drawPath(
+      path,
+      paint,
+    );
+
+    // Pontos.
+    final pontoPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = AppTheme.primary;
+
+    for (int i = 0; i < resultados.length; i++) {
+      final pontuacao =
+          resultados[i].pontuacao.clamp(0, 100);
+
+      final x = resultados.length == 1
+          ? esquerda
+          : esquerda +
+              larguraGrafico *
+                  i /
+                  (resultados.length - 1);
+
+      final y =
+          topo +
+          alturaGrafico -
+          (alturaGrafico *
+              pontuacao /
+              100);
+
+      canvas.drawCircle(
+        Offset(x, y),
+        4,
+        pontoPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant _CognitivoGraficoPainter oldDelegate,
+  ) {
+    return oldDelegate.resultados != resultados;
+  }
+}
+
+class _CognitivoResultadoItem extends StatelessWidget {
+  final AtividadeCognitivaResultado resultado;
+
+  const _CognitivoResultadoItem({
+    required this.resultado,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.extension_outlined,
+              size: 20,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  resultado.titulo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  '${resultado.acertos} acertos · '
+                  '${resultado.erros} erros · '
+                  '${_formatarTempo(resultado.tempoSegundos)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${resultado.pontuacao}%',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primary,
+                ),
+              ),
+              Text(
+                _formatarData(resultado.data),
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatarTempo(int segundos) {
+    final minutos = segundos ~/ 60;
+    final segundosRestantes = segundos % 60;
+
+    if (minutos == 0) {
+      return '${segundosRestantes}s';
+    }
+
+    return '${minutos}min ${segundosRestantes}s';
+  }
+
+  String _formatarData(DateTime data) {
+    return '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}';
+  }
+}
+
 class _HistoricoAtividadeItem extends StatelessWidget {
   final Historico item;
 
@@ -3890,13 +4631,56 @@ class _ResumoHistoricoItem extends StatelessWidget {
 
 class _SosCard extends StatelessWidget {
   final bool ativado;
+  final String? status;
+  final DateTime? dataHora;
 
   const _SosCard({
     required this.ativado,
+    required this.status,
+    required this.dataHora,
   });
+
+  String _formatarDataHora(DateTime data) {
+    final agora = DateTime.now();
+
+    final mesmaData =
+        agora.year == data.year &&
+        agora.month == data.month &&
+        agora.day == data.day;
+
+    final hora =
+        '${data.hour.toString().padLeft(2, '0')}:'
+        '${data.minute.toString().padLeft(2, '0')}';
+
+    if (mesmaData) {
+      return 'Hoje, $hora';
+    }
+
+    final dia =
+        '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year}';
+
+    return '$dia, $hora';
+  }
+
+  String _textoStatus() {
+    switch (status) {
+      case 'acionado':
+        return 'Ativo';
+      case 'atendido':
+        return 'Atendido';
+      case 'finalizado':
+        return 'Encerrado';
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final temHistorico = dataHora != null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -3917,9 +4701,7 @@ class _SosCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: ativado
                   ? Colors.red.withValues(alpha: 0.10)
-                  : AppTheme.primary.withValues(
-                      alpha: 0.10,
-                    ),
+                  : AppTheme.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -3932,8 +4714,7 @@ class _SosCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   ativado
@@ -3951,12 +4732,27 @@ class _SosCard extends StatelessWidget {
                 Text(
                   ativado
                       ? 'O paciente acionou uma emergência.'
-                      : 'Não há emergência ativa no momento.',
+                      : temHistorico
+                          ? 'Último SOS: ${_formatarDataHora(dataHora!)}'
+                          : 'Não há emergência registrada.',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
                   ),
                 ),
+                if (temHistorico) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _textoStatus(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: ativado
+                          ? Colors.red.shade700
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

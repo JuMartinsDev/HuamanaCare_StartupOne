@@ -214,6 +214,8 @@ List<AtividadeCognitivaResultado>
   String? get sosEventoId => _sosEventoId;
 DateTime? get sosDataHora => _sosDataHora;
   DateTime? _sosDataHora;
+  String? _sosStatus;
+String? get sosStatus => _sosStatus;
 
   // ============================================================
   // INICIALIZAÇÃO
@@ -2401,75 +2403,108 @@ Future<void> registrarAtividadeCognitiva(
 
   String? _sosEventoId;
 
-  Future<void> acionarSos() async {
-    _sosAtivado = true;
-    notifyListeners();
+ Future<void> acionarSos() async {
+  _sosAtivado = true;
+  _sosStatus = 'acionado';
+  _sosDataHora = DateTime.now();
 
-    final user = _auth.currentUser;
+  notifyListeners();
 
-    if (user == null) {
-      return;
-    }
+  final user = _auth.currentUser;
 
-    final docRef = await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .collection('sos_eventos')
-        .add({
-      'dataHora': FieldValue.serverTimestamp(),
-      'status': 'acionado',
-      'tipo': 'sos',
-    });
-
-    _sosEventoId = docRef.id;
-    _sosDataHora = DateTime.now();
+  if (user == null) {
+    return;
   }
 
-  Future<void> desativarSos() async {
-    _sosAtivado = false;
-    notifyListeners();
+  final docRef = await _firestore
+      .collection('pacientes')
+      .doc(user.uid)
+      .collection('sos_eventos')
+      .add({
+    'dataHora': FieldValue.serverTimestamp(),
+    'status': 'acionado',
+    'tipo': 'sos',
+  });
 
-    final user = _auth.currentUser;
+  _sosEventoId = docRef.id;
+}
 
-    if (user == null || _sosEventoId == null) {
-      return;
-    }
+Future<void> desativarSos() async {
+  _sosAtivado = false;
+  _sosStatus = 'finalizado';
 
-    await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .collection('sos_eventos')
-        .doc(_sosEventoId)
-        .update({
-      'status': 'finalizado',
-      'dataHoraFinalizacao': FieldValue.serverTimestamp(),
-    });
+  notifyListeners();
 
-    _sosEventoId = null;
-    _sosDataHora = null;
+  final user = _auth.currentUser;
+
+  if (user == null || _sosEventoId == null) {
+    return;
   }
+
+  await _firestore
+      .collection('pacientes')
+      .doc(user.uid)
+      .collection('sos_eventos')
+      .doc(_sosEventoId)
+      .update({
+    'status': 'finalizado',
+    'dataHoraFinalizacao': FieldValue.serverTimestamp(),
+  });
+}
 
 Future<void> _carregarSosAtivo(String pacienteId) async {
-  final snapshot = await _firestore
+  final collection = _firestore
       .collection('pacientes')
       .doc(pacienteId)
-      .collection('sos_eventos')
+      .collection('sos_eventos');
+
+  // Primeiro, procura se existe um SOS ativo.
+  final ativoSnapshot = await collection
       .where('status', isEqualTo: 'acionado')
       .limit(1)
       .get();
 
-  if (snapshot.docs.isEmpty) {
+  if (ativoSnapshot.docs.isNotEmpty) {
+    final doc = ativoSnapshot.docs.first;
+    final dados = doc.data();
+
+    _sosAtivado = true;
+    _sosEventoId = doc.id;
+    _sosStatus = dados['status']?.toString();
+
+    final dataHora = dados['dataHora'];
+
+    if (dataHora is Timestamp) {
+      _sosDataHora = dataHora.toDate();
+    } else {
+      _sosDataHora = null;
+    }
+
+    return;
+  }
+
+  // Se não existe SOS ativo, procura o último SOS registrado.
+  final historicoSnapshot = await collection
+      .orderBy('dataHora', descending: true)
+      .limit(1)
+      .get();
+
+  if (historicoSnapshot.docs.isEmpty) {
     _sosAtivado = false;
     _sosEventoId = null;
+    _sosStatus = null;
     _sosDataHora = null;
     return;
   }
 
-  final dados = snapshot.docs.first.data();
-  final dataHora = dados['dataHora'];
+  final doc = historicoSnapshot.docs.first;
+  final dados = doc.data();
 
-  _sosAtivado = true;
-  _sosEventoId = snapshot.docs.first.id;
+  _sosAtivado = false;
+  _sosEventoId = doc.id;
+  _sosStatus = dados['status']?.toString();
+
+  final dataHora = dados['dataHora'];
 
   if (dataHora is Timestamp) {
     _sosDataHora = dataHora.toDate();
