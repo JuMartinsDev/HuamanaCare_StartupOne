@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class Remedio {
   final String id;
   final String nome;
@@ -523,6 +522,76 @@ class Historico {
       'dataRealizada': dataRealizada?.toIso8601String(),
       'resultado': resultado,
       'atividadeId': atividadeId,
+    };
+  }
+}
+
+
+class AtividadeCognitivaResultado {
+  final String id;
+  final String tipo;
+  final String titulo;
+  final DateTime data;
+  final int pontuacao;
+  final int acertos;
+  final int erros;
+  final int tempoSegundos;
+  final Map<String, dynamic> detalhes;
+
+  const AtividadeCognitivaResultado({
+    this.id = '',
+    required this.tipo,
+    required this.titulo,
+    required this.data,
+    this.pontuacao = 0,
+    this.acertos = 0,
+    this.erros = 0,
+    this.tempoSegundos = 0,
+    this.detalhes = const {},
+  });
+
+  factory AtividadeCognitivaResultado.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
+    DateTime converterData(dynamic valor) {
+      if (valor is Timestamp) {
+        return valor.toDate();
+      }
+
+      if (valor is String && valor.isNotEmpty) {
+        return DateTime.tryParse(valor) ?? DateTime.now();
+      }
+
+      return DateTime.now();
+    }
+
+    return AtividadeCognitivaResultado(
+      id: id,
+      tipo: map['tipo'] ?? '',
+      titulo: map['titulo'] ?? '',
+      data: converterData(map['data']),
+      pontuacao: (map['pontuacao'] as num?)?.toInt() ?? 0,
+      acertos: (map['acertos'] as num?)?.toInt() ?? 0,
+      erros: (map['erros'] as num?)?.toInt() ?? 0,
+      tempoSegundos:
+          (map['tempoSegundos'] as num?)?.toInt() ?? 0,
+      detalhes: Map<String, dynamic>.from(
+        map['detalhes'] ?? {},
+      ),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'tipo': tipo,
+      'titulo': titulo,
+      'data': data.toIso8601String(),
+      'pontuacao': pontuacao,
+      'acertos': acertos,
+      'erros': erros,
+      'tempoSegundos': tempoSegundos,
+      'detalhes': detalhes,
     };
   }
 }

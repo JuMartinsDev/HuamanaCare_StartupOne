@@ -179,6 +179,16 @@ List<Cuidado> get cuidados => List.unmodifiable(_cuidados);
 List<Historico> get historicoAtividades =>
     List.unmodifiable(_historicoAtividades);
 
+// ============================================================
+// ATIVIDADES COGNITIVAS
+// ============================================================
+
+List<AtividadeCognitivaResultado> _resultadosAtividadesCognitivas = [];
+
+List<AtividadeCognitivaResultado>
+    get resultadosAtividadesCognitivas =>
+        List.unmodifiable(_resultadosAtividadesCognitivas);
+
   // ============================================================
   // MENSAGENS
   // ============================================================
@@ -571,6 +581,10 @@ await _carregarHistoricoAtividades(
 );
 
 await _carregarCuidados(
+  pacienteId,
+);
+
+await _carregarAtividadesCognitivas(
   pacienteId,
 );
   }
@@ -1129,6 +1143,37 @@ Future<void> concluirCuidado(
       );
     }
 
+    // ==========================================================
+    // VÍNCULO DO FAMILIAR / CUIDADOR
+    // ==========================================================
+
+    _pacienteVinculadoId =
+        pacienteId;
+
+    await _firestore
+        .collection('pacientes')
+        .doc(user.uid)
+        .set(
+      {
+        'pacienteVinculadoId':
+            pacienteId,
+      },
+      SetOptions(merge: true),
+    );
+
+    await _carregarDadosPacientePorId(
+      pacienteId,
+    );
+
+    await _carregarMensagensFirestore();
+
+    // Mantém acompanhamento em tempo real.
+    _iniciarListenerPaciente(
+      pacienteId,
+    );
+
+    notifyListeners();
+  }
 
 Future<void> _registrarHistoricoAtividade({
   required String pacienteId,
@@ -1169,50 +1214,35 @@ Future<void> _registrarHistoricoAtividade({
       .doc(docId)
       .set(historico.toMap());
 
-      _historicoAtividades.removeWhere(
-  (item) => item.id == docId,
-);
+  _historicoAtividades.removeWhere(
+    (item) => item.id == docId,
+  );
 
-_historicoAtividades.add(historico);
+  _historicoAtividades.add(historico);
 
-_historicoAtividades.sort(
-  (a, b) => b.data.compareTo(a.data),
-);
+  _historicoAtividades.sort(
+    (a, b) => b.data.compareTo(a.data),
+  );
 
-notifyListeners();
+  notifyListeners();
 }
 
-    // ==========================================================
-    // VÍNCULO DO FAMILIAR / CUIDADOR
-    // ==========================================================
+Future<void> _removerHistoricoAtividade({
+  required String pacienteId,
+  required String tipo,
+  required String atividadeId,
+  required DateTime data,
+}) async {
+  final docId =
+      '$tipo-${atividadeId}-${_chaveData(data)}';
 
-    _pacienteVinculadoId =
-        pacienteId;
-
-    await _firestore
-        .collection('pacientes')
-        .doc(user.uid)
-        .set(
-      {
-        'pacienteVinculadoId':
-            pacienteId,
-      },
-      SetOptions(merge: true),
-    );
-
-    await _carregarDadosPacientePorId(
-      pacienteId,
-    );
-
-    await _carregarMensagensFirestore();
-
-    // Mantém acompanhamento em tempo real.
-    _iniciarListenerPaciente(
-      pacienteId,
-    );
-
-    notifyListeners();
-  }
+  await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('historico_atividades')
+      .doc(docId)
+      .delete();
+}
 
   // ============================================================
   // DESVINCULAR CUIDADOR
@@ -1934,60 +1964,101 @@ Future<void> _carregarHistoricoAtividades(
   }
 
 
+Future<void> _carregarAtividadesCognitivas(
+  String pacienteId,
+) async {
+  final snapshot = await _firestore
+      .collection('pacientes')
+      .doc(pacienteId)
+      .collection('atividades_cognitivas')
+      .get();
+
+  _resultadosAtividadesCognitivas = snapshot.docs
+      .map(
+        (doc) => AtividadeCognitivaResultado.fromMap(
+          doc.id,
+          doc.data(),
+        ),
+      )
+      .toList();
+
+  _resultadosAtividadesCognitivas.sort(
+    (a, b) => b.data.compareTo(a.data),
+  );
+}
+
+
     String _chaveData(DateTime data) {
       return '${data.year.toString().padLeft(4, '0')}-'
           '${data.month.toString().padLeft(2, '0')}-'
           '${data.day.toString().padLeft(2, '0')}';
     }
 
-  Future<void> _registrarHistoricoAtividade({
-  required String pacienteId,
-  required String tipo,
-  required String titulo,
-  required String descricao,
-  required String atividadeId,
-  DateTime? dataPrevista,
-  DateTime? dataRealizada,
-  String resultado = 'concluido',
-}) async {
+
+Future<void> registrarAtividadeCognitiva(
+  AtividadeCognitivaResultado resultado,
+) async {
+  debugPrint('========== ATIVIDADE COGNITIVA ==========');
+  debugPrint('INICIANDO SALVAMENTO...');
+  debugPrint('TIPO: ${resultado.tipo}');
+  debugPrint('TÍTULO: ${resultado.titulo}');
+  debugPrint('PONTUAÇÃO: ${resultado.pontuacao}');
+  debugPrint('ACERTOS: ${resultado.acertos}');
+  debugPrint('ERROS: ${resultado.erros}');
+  debugPrint('TEMPO: ${resultado.tempoSegundos}s');
+  debugPrint('DETALHES: ${resultado.detalhes}');
+
+  final pacienteId = pacienteIdDados;
+
+  debugPrint('PACIENTE ID: $pacienteId');
+
+  if (pacienteId == null || pacienteId.isEmpty) {
+    debugPrint('ERRO: nenhum paciente vinculado.');
+
+    throw Exception(
+      'Nenhum paciente vinculado.',
+    );
+  }
+
   final colecao = _firestore
       .collection('pacientes')
       .doc(pacienteId)
-      .collection('historico_atividades');
-
-  final historico = Historico(
-    tipo: tipo,
-    titulo: titulo,
-    descricao: descricao,
-    data: dataRealizada ?? DateTime.now(),
-    dataPrevista: dataPrevista,
-    dataRealizada: dataRealizada,
-    resultado: resultado,
-    atividadeId: atividadeId,
-  );
+      .collection('atividades_cognitivas');
 
   final docRef = colecao.doc();
 
-  await docRef.set(
-    historico.toMap(),
+  debugPrint(
+    'ID DO DOCUMENTO: ${docRef.id}',
   );
-}
 
-Future<void> _removerHistoricoAtividade({
-  required String pacienteId,
-  required String tipo,
-  required String atividadeId,
-  required DateTime data,
-}) async {
-  final docId =
-      '$tipo-${atividadeId}-${_chaveData(data)}';
+  final resultadoSalvo =
+      AtividadeCognitivaResultado(
+    id: docRef.id,
+    tipo: resultado.tipo,
+    titulo: resultado.titulo,
+    data: resultado.data,
+    pontuacao: resultado.pontuacao,
+    acertos: resultado.acertos,
+    erros: resultado.erros,
+    tempoSegundos: resultado.tempoSegundos,
+    detalhes: resultado.detalhes,
+  );
 
-  await _firestore
-      .collection('pacientes')
-      .doc(pacienteId)
-      .collection('historico_atividades')
-      .doc(docId)
-      .delete();
+  debugPrint('SALVANDO NO FIRESTORE...');
+
+  await docRef.set(
+    resultadoSalvo.toMap(),
+  );
+
+  debugPrint('ATIVIDADE SALVA COM SUCESSO!');
+  debugPrint('==========================================');
+
+  _resultadosAtividadesCognitivas.insert(
+    0,
+    resultadoSalvo,
+  );
+
+  notifyListeners();
 }
 
   // ============================================================
@@ -3063,7 +3134,9 @@ Future<void> _carregarSosAtivo(String pacienteId) async {
     _compromissos = [];
     _historico = [];
     _historicoAtividades = [];
+    _resultadosAtividadesCognitivas = [];
     _familiaresVinculados = [];
+    _cuidados = [];
 
     _msgs['familia'] = [];
     _msgs['cuidador'] = [];

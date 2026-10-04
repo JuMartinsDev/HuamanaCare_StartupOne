@@ -3,7 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../../models/app_state.dart';
+import '../../../models/models.dart';
 import '../../../theme/app_theme.dart';
 
 class AtividadesTab extends StatefulWidget {
@@ -78,6 +81,16 @@ class _AtividadesTabState extends State<AtividadesTab> {
     );
   }
 
+void _registrarAtividadeConcluida() {
+  _verificarNovoDia();
+
+  if (!mounted) return;
+
+  setState(() {
+    atividadesConcluidas++;
+  });
+}
+
   void _verificarNovoDia() {
     final hoje = _somenteData(DateTime.now());
 
@@ -87,16 +100,6 @@ class _AtividadesTabState extends State<AtividadesTab> {
         coposAgua = 0;
         passos = 0;
         atividadesConcluidas = 0;
-      });
-    }
-  }
-
-  void _registrarAtividadeConcluida() {
-    _verificarNovoDia();
-
-    if (atividadesConcluidas < metaAtividades) {
-      setState(() {
-        atividadesConcluidas++;
       });
     }
   }
@@ -123,63 +126,128 @@ class _AtividadesTabState extends State<AtividadesTab> {
     });
   }
 
-  void _abrirAtividade(BuildContext context, String tipo) {
-    switch (tipo) {
-      case 'memoria':
-        showDialog(
-          context: context,
-          builder: (_) => _JogoMemoriaDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
-        );
-        break;
+void _abrirAtividade(
+  BuildContext context,
+  String tipo,
+) {
+  switch (tipo) {
+    case 'memoria':
+      showDialog(
+        context: context,
+        builder: (_) => _JogoMemoriaDialog(
+          onResultado: (resultado) async {
+            final appState =
+                context.read<AppState>();
 
-      case 'multiplicacao':
-        showDialog(
-          context: context,
-          builder: (_) => _MultiplicacaoDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
-        );
-        break;
+            await appState.registrarAtividadeCognitiva(
+              resultado,
+            );
 
-      case 'sudoku':
-        showDialog(
-          context: context,
-          builder: (_) => _SudokuDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
-        );
-        break;
+            if (mounted) {
+              _registrarAtividadeConcluida();
+            }
+          },
+        ),
+      );
+      break;
 
-      case 'caca_palavras':
-        showDialog(
-          context: context,
-          builder: (_) => _CacaPalavrasDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
-        );
-        break;
+case 'multiplicacao':
+  showDialog(
+    context: context,
+    builder: (_) => _MultiplicacaoDialog(
+      onResultado: (resultado) async {
+        final appState = context.read<AppState>();
 
-      case 'quiz':
-        showDialog(
-          context: context,
-          builder: (_) => _QuizMemoriaDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
+        await appState.registrarAtividadeCognitiva(
+          resultado,
         );
-        break;
 
-      case 'palavras':
-        showDialog(
-          context: context,
-          builder: (_) => _PalavrasEmbaralhadasDialog(
-            onConcluido: _registrarAtividadeConcluida,
-          ),
+if (mounted) {
+  _registrarAtividadeConcluida();
+}
+      },
+    ),
+  );
+  break;
+
+case 'sudoku':
+  showDialog(
+    context: context,
+    builder: (_) => _SudokuDialog(
+      onResultado: (resultado) async {
+        final appState = context.read<AppState>();
+
+        await appState.registrarAtividadeCognitiva(
+          resultado,
         );
-        break;
-    }
+
+if (mounted) {
+  _registrarAtividadeConcluida();
+}
+      },
+    ),
+  );
+  break;
+
+case 'caca_palavras':
+  showDialog(
+    context: context,
+    builder: (_) => _CacaPalavrasDialog(
+      onResultado: (resultado) async {
+        final appState = context.read<AppState>();
+
+        await appState.registrarAtividadeCognitiva(
+          resultado,
+        );
+
+if (mounted) {
+  _registrarAtividadeConcluida();
+}
+      },
+    ),
+  );
+  break;
+
+case 'quiz':
+  showDialog(
+    context: context,
+    builder: (_) => _QuizMemoriaDialog(
+      onResultado: (resultado) async {
+        final appState = context.read<AppState>();
+
+        await appState.registrarAtividadeCognitiva(
+          resultado,
+        );
+
+ if (mounted) {
+  _registrarAtividadeConcluida();
+}
+      },
+    ),
+  );
+  break;
+
+case 'palavras':
+  showDialog(
+    context: context,
+    builder: (_) => _PalavrasEmbaralhadasDialog(
+      onResultado: (resultado) async {
+        final appState = context.read<AppState>();
+
+        await appState.registrarAtividadeCognitiva(
+          resultado,
+        );
+
+ if (mounted) {
+  _registrarAtividadeConcluida();
+}
+      },
+    ),
+  );
+  break;
+
   }
+}
 
   @override
   void dispose() {
@@ -290,9 +358,10 @@ class _AtividadesTabState extends State<AtividadesTab> {
           _MetaCard(
             icon: '🎯',
             title: 'Atividades',
-            value: '$atividadesConcluidas / $metaAtividades hoje',
-            progress:
-                atividadesConcluidas / metaAtividades,
+value:
+    '${min(atividadesConcluidas, metaAtividades)} / $metaAtividades hoje',
+progress:
+    atividadesConcluidas / metaAtividades,
             buttonLabel:
                 atividadesConcluidas >= metaAtividades
                     ? 'Concluída'
@@ -523,10 +592,13 @@ class _MetaCard extends StatelessWidget {
 // ============================================================
 
 class _JogoMemoriaDialog extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
+
 
   const _JogoMemoriaDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
@@ -557,8 +629,14 @@ class _JogoMemoriaDialogState
 
   int paresEncontrados = 0;
   int movimentos = 0;
-
   bool bloqueado = false;
+
+  // Início da sessão completa.
+  DateTime? _inicioSessao;
+
+  // Soma dos movimentos dos três níveis.
+  int _movimentosTotais = 0;
+  int _paresTotaisConcluidos = 0;
 
   int get quantidadePares {
     if (nivel == 1) return 4;
@@ -570,6 +648,12 @@ class _JogoMemoriaDialogState
   void initState() {
     super.initState();
 
+    _inicioSessao = DateTime.now();
+
+    _iniciarJogoInicial();
+  }
+
+  void _iniciarJogoInicial() {
     final simbolosNivel =
         _simbolos.take(quantidadePares).toList();
 
@@ -582,6 +666,11 @@ class _JogoMemoriaDialogState
 
     reveladas =
         List.filled(cartas.length, false);
+
+    selecionadas = [];
+    paresEncontrados = 0;
+    movimentos = 0;
+    bloqueado = false;
   }
 
   void _iniciarJogo() {
@@ -619,45 +708,94 @@ class _JogoMemoriaDialogState
     });
 
     if (selecionadas.length == 2) {
-      movimentos++;
+  movimentos++;
+  _movimentosTotais++;
 
-      final primeira = selecionadas[0];
-      final segunda = selecionadas[1];
+  bloqueado = true;
 
-      if (cartas[primeira] == cartas[segunda]) {
-        Future.delayed(
-          const Duration(milliseconds: 400),
-          () {
-            if (!mounted) return;
+  final primeira = selecionadas[0];
+  final segunda = selecionadas[1];
 
-            setState(() {
-              paresEncontrados++;
-              selecionadas.clear();
-            });
+  if (cartas[primeira] == cartas[segunda]) {
+    Future.delayed(
+      const Duration(milliseconds: 400),
+      () {
+        if (!mounted) return;
 
-            if (paresEncontrados == quantidadePares) {
-              _mostrarVitoria();
-            }
-          },
-        );
-      } else {
-        bloqueado = true;
+        setState(() {
+          paresEncontrados++;
+          _paresTotaisConcluidos++;
+          selecionadas.clear();
+          bloqueado = false;
+        });
 
-        Future.delayed(
-          const Duration(milliseconds: 800),
-          () {
-            if (!mounted) return;
+        if (paresEncontrados == quantidadePares) {
+          _mostrarVitoria();
+        }
+      },
+    );
+  } else {
+    Future.delayed(
+      const Duration(milliseconds: 800),
+      () {
+        if (!mounted) return;
 
-            setState(() {
-              reveladas[primeira] = false;
-              reveladas[segunda] = false;
-              selecionadas.clear();
-              bloqueado = false;
-            });
-          },
-        );
-      }
-    }
+        setState(() {
+          reveladas[primeira] = false;
+          reveladas[segunda] = false;
+          selecionadas.clear();
+          bloqueado = false;
+        });
+      },
+    );
+  }
+}
+  }
+
+  Future<void> _salvarResultadoFinal() async {
+    final inicio =
+        _inicioSessao ?? DateTime.now();
+
+    final tempoSegundos =
+        DateTime.now()
+            .difference(inicio)
+            .inSeconds;
+
+final acertos = _paresTotaisConcluidos;
+
+    final erros =
+        (_movimentosTotais - acertos)
+            .clamp(0, 999999);
+
+    final totalTentativas =
+        acertos + erros;
+
+    final pontuacao =
+        totalTentativas == 0
+            ? 0
+            : ((acertos /
+                        totalTentativas) *
+                    100)
+                .round();
+
+    final resultado =
+        AtividadeCognitivaResultado(
+      tipo: 'memoria',
+      titulo: 'Jogo da Memória',
+      data: DateTime.now(),
+      pontuacao: pontuacao,
+      acertos: acertos,
+      erros: erros,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'nivel': nivel,
+        'pares': quantidadePares,
+        'movimentosNivel': movimentos,
+        'movimentosTotais': _movimentosTotais,
+      },
+    );
+
+    await widget.onResultado(resultado);
   }
 
   void _mostrarVitoria() {
@@ -678,7 +816,7 @@ class _JogoMemoriaDialogState
           ),
           content: Text(
             ultimoNivel
-                ? 'Você completou todos os níveis em $movimentos movimentos.'
+                ? 'Você completou todos os níveis em $_movimentosTotais movimentos.'
                 : 'Você encontrou todos os pares em $movimentos movimentos.',
             style: GoogleFonts.poppins(),
           ),
@@ -702,17 +840,27 @@ class _JogoMemoriaDialogState
                   ),
                 ),
               ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
 
-                if (ultimoNivel) {
-                  widget.onConcluido();
-                  Navigator.pop(this.context);
-                }
-              },
+            TextButton(
+onPressed: () async {
+  Navigator.pop(dialogContext);
+
+  try {
+    await _salvarResultadoFinal();
+  } catch (e) {
+    debugPrint(
+      'ERRO AO SALVAR JOGO DA MEMÓRIA: $e',
+    );
+  }
+
+  if (!mounted) return;
+
+  Navigator.pop(this.context);
+},
               child: Text(
-                ultimoNivel ? 'Fechar' : 'Sair',
+                ultimoNivel
+                    ? 'Fechar'
+                    : 'Sair',
                 style: GoogleFonts.poppins(),
               ),
             ),
@@ -743,7 +891,9 @@ class _JogoMemoriaDialogState
                 color: Colors.black54,
               ),
             ),
+
             const SizedBox(height: 12),
+
             GridView.builder(
               shrinkWrap: true,
               itemCount: cartas.length,
@@ -753,26 +903,41 @@ class _JogoMemoriaDialogState
                 crossAxisSpacing: 7,
                 mainAxisSpacing: 7,
               ),
-              itemBuilder: (context, index) {
-                final visivel = reveladas[index];
+              itemBuilder:
+                  (context, index) {
+                final visivel =
+                    reveladas[index];
 
                 return GestureDetector(
-                  onTap: () => _tocarCarta(index),
+                  onTap: () =>
+                      _tocarCarta(index),
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration:
+                        BoxDecoration(
                       color: visivel
                           ? AppTheme.primary
-                              .withValues(alpha: 0.10)
+                              .withValues(
+                              alpha: 0.10,
+                            )
                           : AppTheme.primary,
                       borderRadius:
-                          BorderRadius.circular(12),
+                          BorderRadius.circular(
+                        12,
+                      ),
                     ),
-                    alignment: Alignment.center,
+                    alignment:
+                        Alignment.center,
                     child: Text(
-                      visivel ? cartas[index] : '?',
+                      visivel
+                          ? cartas[index]
+                          : '?',
                       style: TextStyle(
-                        fontSize: visivel ? 25 : 22,
-                        fontWeight: FontWeight.w700,
+                        fontSize:
+                            visivel
+                                ? 25
+                                : 22,
+                        fontWeight:
+                            FontWeight.w700,
                         color: visivel
                             ? Colors.black87
                             : Colors.white,
@@ -782,23 +947,30 @@ class _JogoMemoriaDialogState
                 );
               },
             ),
+
             const SizedBox(height: 12),
+
             Row(
               mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+                  MainAxisAlignment
+                      .spaceBetween,
               children: [
                 Text(
                   'Movimentos: $movimentos',
-                  style: GoogleFonts.poppins(
+                  style:
+                      GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color:
+                        Colors.black54,
                   ),
                 ),
                 Text(
                   'Pares: $paresEncontrados/$quantidadePares',
-                  style: GoogleFonts.poppins(
+                  style:
+                      GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color:
+                        Colors.black54,
                   ),
                 ),
               ],
@@ -806,12 +978,16 @@ class _JogoMemoriaDialogState
           ],
         ),
       ),
+
       actions: [
         TextButton(
           onPressed: () {
-            setState(() {
-              nivel = 1;
-            });
+          setState(() {
+            nivel = 1;
+            _movimentosTotais = 0;
+            _paresTotaisConcluidos = 0;
+            _inicioSessao = DateTime.now();
+          });
 
             _iniciarJogo();
           },
@@ -819,15 +995,19 @@ class _JogoMemoriaDialogState
             'Recomeçar',
             style: GoogleFonts.poppins(
               color: AppTheme.primary,
-              fontWeight: FontWeight.w600,
+              fontWeight:
+                  FontWeight.w600,
             ),
           ),
         ),
+
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () =>
+              Navigator.pop(context),
           child: Text(
             'Fechar',
-            style: GoogleFonts.poppins(),
+            style:
+                GoogleFonts.poppins(),
           ),
         ),
       ],
@@ -840,10 +1020,12 @@ class _JogoMemoriaDialogState
 // ============================================================
 
 class _MultiplicacaoDialog extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
 
   const _MultiplicacaoDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
@@ -854,23 +1036,25 @@ class _MultiplicacaoDialog extends StatefulWidget {
 class _MultiplicacaoDialogState
     extends State<_MultiplicacaoDialog> {
   final Random _random = Random();
-
   final TextEditingController _controller =
       TextEditingController();
 
   int rodada = 0;
   int acertos = 0;
-
   int numero1 = 0;
   int numero2 = 0;
-
   bool respondida = false;
   bool acertou = false;
   int? respostaCorreta;
 
+  DateTime? _inicioAtividade;
+
   @override
   void initState() {
     super.initState();
+
+    _inicioAtividade = DateTime.now();
+
     _novaPergunta();
   }
 
@@ -883,7 +1067,6 @@ class _MultiplicacaoDialogState
   void _novaPergunta() {
     numero1 = _random.nextInt(9) + 2;
     numero2 = _random.nextInt(9) + 2;
-
     respostaCorreta = numero1 * numero2;
 
     _controller.clear();
@@ -925,6 +1108,39 @@ class _MultiplicacaoDialogState
     _novaPergunta();
   }
 
+  Future<void> _salvarResultado() async {
+    final inicio =
+        _inicioAtividade ?? DateTime.now();
+
+    final tempoSegundos =
+        DateTime.now()
+            .difference(inicio)
+            .inSeconds;
+
+    final erros = 5 - acertos;
+
+    final pontuacao =
+        ((acertos / 5) * 100).round();
+
+    final resultado =
+        AtividadeCognitivaResultado(
+      tipo: 'multiplicacao',
+      titulo: 'Desafio de Multiplicação',
+      data: DateTime.now(),
+      pontuacao: pontuacao,
+      acertos: acertos,
+      erros: erros,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'questoes': 5,
+        'acertos': acertos,
+        'erros': erros,
+      },
+    );
+
+    await widget.onResultado(resultado);
+  }
+
   void _mostrarResultado() {
     showDialog(
       context: context,
@@ -949,6 +1165,8 @@ class _MultiplicacaoDialogState
                 setState(() {
                   rodada = 0;
                   acertos = 0;
+                  _inicioAtividade =
+                      DateTime.now();
                 });
 
                 _novaPergunta();
@@ -962,10 +1180,18 @@ class _MultiplicacaoDialogState
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                widget.onConcluido();
+                try {
+                  await _salvarResultado();
+                } catch (e) {
+                  debugPrint(
+                    'ERRO AO SALVAR MULTIPLICAÇÃO: $e',
+                  );
+                }
+
+                if (!mounted) return;
 
                 Navigator.pop(this.context);
               },
@@ -1028,7 +1254,8 @@ class _MultiplicacaoDialogState
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding:
+                    const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: acertou
                       ? Colors.green
@@ -1058,7 +1285,8 @@ class _MultiplicacaoDialogState
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () =>
+              Navigator.pop(context),
           child: Text(
             'Fechar',
             style: GoogleFonts.poppins(),
@@ -1103,16 +1331,18 @@ class _MultiplicacaoDialogState
 // SUDOKU
 // ============================================================
 
+
 class _SudokuDialog extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
 
   const _SudokuDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
-  State<_SudokuDialog> createState() =>
-      _SudokuDialogState();
+  State<_SudokuDialog> createState() => _SudokuDialogState();
 }
 
 class _SudokuDialogState extends State<_SudokuDialog> {
@@ -1131,17 +1361,35 @@ class _SudokuDialogState extends State<_SudokuDialog> {
   ];
 
   late List<List<int>> _tabuleiro;
+  DateTime? _inicioAtividade;
+  bool _finalizando = false;
 
   @override
   void initState() {
     super.initState();
+
+    _inicioAtividade = DateTime.now();
 
     _tabuleiro = _inicial
         .map((linha) => List<int>.from(linha))
         .toList();
   }
 
-  bool _completo() {
+  // Verifica apenas se todos os espaços foram preenchidos.
+  bool _tabuleiroPreenchido() {
+    for (int linha = 0; linha < 4; linha++) {
+      for (int coluna = 0; coluna < 4; coluna++) {
+        if (_tabuleiro[linha][coluna] == 0) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Verifica se todos os números estão corretos.
+  bool _tabuleiroCorreto() {
     for (int linha = 0; linha < 4; linha++) {
       for (int coluna = 0; coluna < 4; coluna++) {
         if (_tabuleiro[linha][coluna] !=
@@ -1154,11 +1402,9 @@ class _SudokuDialogState extends State<_SudokuDialog> {
     return true;
   }
 
-  void _selecionarNumero(
-    int linha,
-    int coluna,
-  ) {
-    if (_inicial[linha][coluna] != 0) {
+  void _selecionarNumero(int linha, int coluna) {
+    if (_inicial[linha][coluna] != 0 ||
+        _finalizando) {
       return;
     }
 
@@ -1182,48 +1428,51 @@ class _SudokuDialogState extends State<_SudokuDialog> {
                 Row(
                   mainAxisAlignment:
                       MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    4,
-                    (index) {
-                      final numero = index + 1;
+                  children: List.generate(4, (index) {
+                    final numero = index + 1;
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.pop(sheetContext);
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(sheetContext);
 
-                          setState(() {
-                            _tabuleiro[linha][coluna] =
-                                numero;
-                          });
+                        if (!mounted) return;
 
-                          if (_completo()) {
-                            _mostrarVitoria();
-                          }
-                        },
-                        borderRadius:
-                            BorderRadius.circular(14),
-                        child: Container(
-                          width: 55,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary
-                                .withValues(alpha: 0.10),
-                            borderRadius:
-                                BorderRadius.circular(14),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$numero',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primary,
-                            ),
+                        setState(() {
+                          _tabuleiro[linha][coluna] =
+                              numero;
+                        });
+
+                        debugPrint(
+                          'SUDOKU TABULEIRO: $_tabuleiro',
+                        );
+                        debugPrint(
+                          'SUDOKU PREENCHIDO: '
+                          '${_tabuleiroPreenchido()}',
+                        );
+                      },
+                      borderRadius:
+                          BorderRadius.circular(14),
+                      child: Container(
+                        width: 55,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary
+                              .withValues(alpha: 0.10),
+                          borderRadius:
+                              BorderRadius.circular(14),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$numero',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primary,
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),
@@ -1233,7 +1482,87 @@ class _SudokuDialogState extends State<_SudokuDialog> {
     );
   }
 
+  void _finalizarSudoku() {
+    if (!_tabuleiroPreenchido() || _finalizando) {
+      return;
+    }
+
+    if (_tabuleiroCorreto()) {
+      _mostrarVitoria();
+    } else {
+      _mostrarErro();
+    }
+  }
+
+  void _mostrarErro() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Tente novamente',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'O tabuleiro está preenchido, mas existem '
+            'números incorretos. Corrija as respostas '
+            'e tente finalizar novamente.',
+            style: GoogleFonts.poppins(),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Continuar corrigindo',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _salvarResultado() async {
+    final inicio = _inicioAtividade ?? DateTime.now();
+
+    final tempoSegundos =
+        DateTime.now().difference(inicio).inSeconds;
+
+    final resultado = AtividadeCognitivaResultado(
+      tipo: 'sudoku',
+      titulo: 'Sudoku',
+      data: DateTime.now(),
+      pontuacao: 100,
+      acertos: 1,
+      erros: 0,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'tamanho': '4x4',
+        'concluido': true,
+      },
+    );
+
+    await widget.onResultado(resultado);
+  }
+
   void _mostrarVitoria() {
+    if (_finalizando) return;
+
+    setState(() {
+      _finalizando = true;
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1246,7 +1575,8 @@ class _SudokuDialogState extends State<_SudokuDialog> {
             ),
           ),
           content: Text(
-            'Parabéns! Você completou o Sudoku.',
+            'Parabéns! Você completou o Sudoku '
+            'corretamente.',
             style: GoogleFonts.poppins(),
           ),
           actions: [
@@ -1254,13 +1584,15 @@ class _SudokuDialogState extends State<_SudokuDialog> {
               onPressed: () {
                 Navigator.pop(dialogContext);
 
+                if (!mounted) return;
+
                 setState(() {
                   _tabuleiro = _inicial
-                      .map(
-                        (linha) =>
-                            List<int>.from(linha),
-                      )
+                      .map((linha) => List<int>.from(linha))
                       .toList();
+
+                  _inicioAtividade = DateTime.now();
+                  _finalizando = false;
                 });
               },
               child: Text(
@@ -1271,17 +1603,47 @@ class _SudokuDialogState extends State<_SudokuDialog> {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () {
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _salvarResultado();
+
+                  debugPrint(
+                    'SUDOKU: RESULTADO SALVO COM SUCESSO!',
+                  );
+                } catch (e) {
+                  debugPrint(
+                    'ERRO AO SALVAR SUDOKU: $e',
+                  );
+
+                  if (!mounted) return;
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Não foi possível salvar o resultado. '
+                        'Tente novamente.',
+                      ),
+                    ),
+                  );
+
+                  return;
+                }
+
+                if (!mounted) return;
+
                 Navigator.pop(dialogContext);
-
-                widget.onConcluido();
-
-                Navigator.pop(this.context);
+                Navigator.pop(context);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: Text(
-                'Fechar',
-                style: GoogleFonts.poppins(),
+                'Finalizar',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -1292,6 +1654,8 @@ class _SudokuDialogState extends State<_SudokuDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final preenchido = _tabuleiroPreenchido();
+
     return AlertDialog(
       title: Text(
         'Sudoku',
@@ -1305,7 +1669,8 @@ class _SudokuDialogState extends State<_SudokuDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Complete os espaços vazios.',
+              'Complete os espaços vazios e toque em '
+              'Finalizar para conferir suas respostas.',
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 color: Colors.black54,
@@ -1369,10 +1734,29 @@ class _SudokuDialogState extends State<_SudokuDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _finalizando
+              ? null
+              : () => Navigator.pop(context),
           child: Text(
-            'Fechar',
+            'Sair',
             style: GoogleFonts.poppins(),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: preenchido && !_finalizando
+              ? _finalizarSudoku
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.grey.shade300,
+            disabledForegroundColor: Colors.grey.shade600,
+          ),
+          child: Text(
+            'Finalizar',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -1385,10 +1769,12 @@ class _SudokuDialogState extends State<_SudokuDialog> {
 // ============================================================
 
 class _CacaPalavrasDialog extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
 
   const _CacaPalavrasDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
@@ -1418,11 +1804,25 @@ class _CacaPalavrasDialogState
   ];
 
   final Set<String> _encontradas = {};
-
   final List<_Posicao> _selecionadas = [];
 
-  void _selecionarLetra(int linha, int coluna) {
-    final novaPosicao = _Posicao(linha, coluna);
+  DateTime? _inicioAtividade;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _inicioAtividade = DateTime.now();
+  }
+
+  void _selecionarLetra(
+    int linha,
+    int coluna,
+  ) {
+    final novaPosicao = _Posicao(
+      linha,
+      coluna,
+    );
 
     if (_selecionadas.contains(novaPosicao)) {
       return;
@@ -1522,7 +1922,8 @@ class _CacaPalavrasDialogState
 
     // Ainda pode formar alguma palavra.
     final existePrefixo = _palavras.any(
-      (palavra) => palavra.startsWith(palavraAtual),
+      (palavra) =>
+          palavra.startsWith(palavraAtual),
     );
 
     // Não existe nenhuma palavra começando assim.
@@ -1540,10 +1941,48 @@ class _CacaPalavrasDialogState
     }
   }
 
-  bool _estaSelecionada(int linha, int coluna) {
+  bool _estaSelecionada(
+    int linha,
+    int coluna,
+  ) {
     return _selecionadas.contains(
       _Posicao(linha, coluna),
     );
+  }
+
+  Future<void> _salvarResultado() async {
+    final inicio =
+        _inicioAtividade ?? DateTime.now();
+
+    final tempoSegundos =
+        DateTime.now()
+            .difference(inicio)
+            .inSeconds;
+
+    final acertos = _encontradas.length;
+
+    final erros = 0;
+
+    final pontuacao =
+        ((acertos / _palavras.length) * 100)
+            .round();
+
+    final resultado =
+        AtividadeCognitivaResultado(
+      tipo: 'caca_palavras',
+      titulo: 'Caça-Palavras',
+      data: DateTime.now(),
+      pontuacao: pontuacao,
+      acertos: acertos,
+      erros: erros,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'palavras': _palavras.length,
+        'encontradas': acertos,
+      },
+    );
+
+    await widget.onResultado(resultado);
   }
 
   void _mostrarVitoria() {
@@ -1570,6 +2009,8 @@ class _CacaPalavrasDialogState
                 setState(() {
                   _encontradas.clear();
                   _selecionadas.clear();
+                  _inicioAtividade =
+                      DateTime.now();
                 });
               },
               child: Text(
@@ -1581,10 +2022,18 @@ class _CacaPalavrasDialogState
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                widget.onConcluido();
+                try {
+                  await _salvarResultado();
+                } catch (e) {
+                  debugPrint(
+                    'ERRO AO SALVAR CAÇA-PALAVRAS: $e',
+                  );
+                }
+
+                if (!mounted) return;
 
                 Navigator.pop(this.context);
               },
@@ -1622,17 +2071,18 @@ class _CacaPalavrasDialogState
               ),
             ),
             const SizedBox(height: 12),
-
             Wrap(
               spacing: 8,
               runSpacing: 6,
               alignment: WrapAlignment.center,
-              children: _palavras.map((palavra) {
+              children:
+                  _palavras.map((palavra) {
                 final encontrada =
                     _encontradas.contains(palavra);
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding:
+                      const EdgeInsets.symmetric(
                     horizontal: 9,
                     vertical: 5,
                   ),
@@ -1648,7 +2098,8 @@ class _CacaPalavrasDialogState
                     palavra,
                     style: GoogleFonts.poppins(
                       fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                      fontWeight:
+                          FontWeight.w600,
                       decoration: encontrada
                           ? TextDecoration.lineThrough
                           : null,
@@ -1660,9 +2111,7 @@ class _CacaPalavrasDialogState
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 16),
-
             AspectRatio(
               aspectRatio: 1,
               child: GridView.builder(
@@ -1678,14 +2127,18 @@ class _CacaPalavrasDialogState
                 itemBuilder: (context, index) {
                   final linha = index ~/ 8;
                   final coluna = index % 8;
-
-                  final letra = _grade[linha][coluna];
+                  final letra =
+                      _grade[linha][coluna];
 
                   final selecionada =
-                      _estaSelecionada(linha, coluna);
+                      _estaSelecionada(
+                    linha,
+                    coluna,
+                  );
 
                   return GestureDetector(
-                    onTap: () => _selecionarLetra(
+                    onTap: () =>
+                        _selecionarLetra(
                       linha,
                       coluna,
                     ),
@@ -1694,7 +2147,9 @@ class _CacaPalavrasDialogState
                         color: selecionada
                             ? AppTheme.primary
                             : AppTheme.primary
-                                .withValues(alpha: 0.07),
+                                .withValues(
+                                alpha: 0.07,
+                              ),
                         borderRadius:
                             BorderRadius.circular(7),
                       ),
@@ -1703,7 +2158,8 @@ class _CacaPalavrasDialogState
                         letra,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          fontWeight:
+                              FontWeight.w700,
                           color: selecionada
                               ? Colors.white
                               : Colors.black87,
@@ -1714,9 +2170,7 @@ class _CacaPalavrasDialogState
                 },
               ),
             ),
-
             const SizedBox(height: 10),
-
             Text(
               '${_encontradas.length} de ${_palavras.length} encontradas',
               style: GoogleFonts.poppins(
@@ -1729,7 +2183,8 @@ class _CacaPalavrasDialogState
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () =>
+              Navigator.pop(context),
           child: Text(
             'Fechar',
             style: GoogleFonts.poppins(),
@@ -1744,7 +2199,10 @@ class _Posicao {
   final int linha;
   final int coluna;
 
-  const _Posicao(this.linha, this.coluna);
+  const _Posicao(
+    this.linha,
+    this.coluna,
+  );
 
   @override
   bool operator ==(Object other) {
@@ -1754,7 +2212,8 @@ class _Posicao {
   }
 
   @override
-  int get hashCode => Object.hash(linha, coluna);
+  int get hashCode =>
+      Object.hash(linha, coluna);
 }
 
 // ============================================================
@@ -1762,10 +2221,12 @@ class _Posicao {
 // ============================================================
 
 class _QuizMemoriaDialog extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
 
   const _QuizMemoriaDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
@@ -1787,7 +2248,8 @@ class _QuizMemoriaDialogState
       'resposta': 'Maçã',
     },
     {
-      'pergunta': 'Qual animal é conhecido por latir?',
+      'pergunta':
+          'Qual animal é conhecido por latir?',
       'opcoes': [
         'Gato',
         'Cachorro',
@@ -1835,6 +2297,15 @@ class _QuizMemoriaDialogState
   int acertos = 0;
   bool respondida = false;
 
+  DateTime? _inicioAtividade;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _inicioAtividade = DateTime.now();
+  }
+
   void _responder(String resposta) {
     if (respondida) return;
 
@@ -1868,6 +2339,41 @@ class _QuizMemoriaDialogState
     );
   }
 
+  Future<void> _salvarResultado() async {
+    final inicio =
+        _inicioAtividade ?? DateTime.now();
+
+    final tempoSegundos =
+        DateTime.now()
+            .difference(inicio)
+            .inSeconds;
+
+    final erros =
+        _perguntas.length - acertos;
+
+    final pontuacao =
+        ((acertos / _perguntas.length) * 100)
+            .round();
+
+    final resultado =
+        AtividadeCognitivaResultado(
+      tipo: 'quiz',
+      titulo: 'Quiz de Memória',
+      data: DateTime.now(),
+      pontuacao: pontuacao,
+      acertos: acertos,
+      erros: erros,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'perguntas': _perguntas.length,
+        'acertos': acertos,
+        'erros': erros,
+      },
+    );
+
+    await widget.onResultado(resultado);
+  }
+
   void _mostrarResultado() {
     showDialog(
       context: context,
@@ -1893,6 +2399,8 @@ class _QuizMemoriaDialogState
                   perguntaAtual = 0;
                   acertos = 0;
                   respondida = false;
+                  _inicioAtividade =
+                      DateTime.now();
                 });
               },
               child: Text(
@@ -1904,10 +2412,18 @@ class _QuizMemoriaDialogState
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                widget.onConcluido();
+                try {
+                  await _salvarResultado();
+                } catch (e) {
+                  debugPrint(
+                    'ERRO AO SALVAR QUIZ DE MEMÓRIA: $e',
+                  );
+                }
+
+                if (!mounted) return;
 
                 Navigator.pop(this.context);
               },
@@ -1924,7 +2440,8 @@ class _QuizMemoriaDialogState
 
   @override
   Widget build(BuildContext context) {
-    final pergunta = _perguntas[perguntaAtual];
+    final pergunta =
+        _perguntas[perguntaAtual];
 
     return AlertDialog(
       title: Text(
@@ -1960,33 +2477,43 @@ class _QuizMemoriaDialogState
             ).map(
               (opcao) => Padding(
                 padding:
-                    const EdgeInsets.only(bottom: 8),
+                    const EdgeInsets.only(
+                  bottom: 8,
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: respondida
                         ? null
-                        : () => _responder(opcao),
-                    style: OutlinedButton.styleFrom(
+                        : () =>
+                            _responder(opcao),
+                    style:
+                        OutlinedButton.styleFrom(
                       padding:
                           const EdgeInsets.symmetric(
                         vertical: 12,
                       ),
                       side: BorderSide(
                         color: AppTheme.primary
-                            .withValues(alpha: 0.35),
+                            .withValues(
+                          alpha: 0.35,
+                        ),
                       ),
                       shape:
                           RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.circular(12),
+                            BorderRadius.circular(
+                          12,
+                        ),
                       ),
                     ),
                     child: Text(
                       opcao,
-                      style: GoogleFonts.poppins(
+                      style:
+                          GoogleFonts.poppins(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight:
+                            FontWeight.w600,
                       ),
                     ),
                   ),
@@ -1998,7 +2525,8 @@ class _QuizMemoriaDialogState
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () =>
+              Navigator.pop(context),
           child: Text(
             'Fechar',
             style: GoogleFonts.poppins(),
@@ -2015,10 +2543,12 @@ class _QuizMemoriaDialogState
 
 class _PalavrasEmbaralhadasDialog
     extends StatefulWidget {
-  final VoidCallback onConcluido;
+  final Future<void> Function(
+    AtividadeCognitivaResultado resultado,
+  ) onResultado;
 
   const _PalavrasEmbaralhadasDialog({
-    required this.onConcluido,
+    required this.onResultado,
   });
 
   @override
@@ -2050,9 +2580,13 @@ class _PalavrasEmbaralhadasDialogState
   bool respondida = false;
   bool acertou = false;
 
+  late DateTime _inicioAtividade;
+
   @override
   void initState() {
     super.initState();
+
+    _inicioAtividade = DateTime.now();
 
     _novaPalavraInicial();
   }
@@ -2094,14 +2628,30 @@ class _PalavrasEmbaralhadasDialogState
 
     if (resposta.isEmpty) return;
 
+    final acertouAgora =
+        resposta == palavraAtual;
+
     setState(() {
       respondida = true;
-      acertou = resposta == palavraAtual;
+      acertou = acertouAgora;
 
-      if (acertou) {
+      if (acertouAgora) {
         acertos++;
       }
     });
+
+    // Se foi a última palavra,
+    // mostra o resultado automaticamente.
+    if (rodada == _palavras.length - 1) {
+      Future.delayed(
+        const Duration(milliseconds: 700),
+        () {
+          if (!mounted) return;
+
+          _mostrarResultado();
+        },
+      );
+    }
   }
 
   void _proximaPalavra() {
@@ -2115,6 +2665,38 @@ class _PalavrasEmbaralhadasDialogState
     });
 
     _novaPalavra();
+  }
+
+  Future<void> _salvarResultado() async {
+    final tempoSegundos =
+        DateTime.now()
+            .difference(_inicioAtividade)
+            .inSeconds;
+
+    final totalPalavras = _palavras.length;
+
+    final erros = totalPalavras - acertos;
+
+    final pontuacao =
+        ((acertos / totalPalavras) * 100).round();
+
+    final resultado =
+        AtividadeCognitivaResultado(
+      tipo: 'palavras',
+      titulo: 'Palavras Embaralhadas',
+      data: DateTime.now(),
+      pontuacao: pontuacao,
+      acertos: acertos,
+      erros: erros,
+      tempoSegundos: tempoSegundos,
+      detalhes: {
+        'palavras': totalPalavras,
+        'acertos': acertos,
+        'erros': erros,
+      },
+    );
+
+    await widget.onResultado(resultado);
   }
 
   void _mostrarResultado() {
@@ -2141,6 +2723,7 @@ class _PalavrasEmbaralhadasDialogState
                 setState(() {
                   rodada = 0;
                   acertos = 0;
+                  _inicioAtividade = DateTime.now();
                 });
 
                 _novaPalavra();
@@ -2154,10 +2737,18 @@ class _PalavrasEmbaralhadasDialogState
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
 
-                widget.onConcluido();
+                try {
+                  await _salvarResultado();
+                } catch (e) {
+                  debugPrint(
+                    'ERRO AO SALVAR PALAVRAS EMBARALHADAS: $e',
+                  );
+                }
+
+                if (!mounted) return;
 
                 Navigator.pop(this.context);
               },
@@ -2238,7 +2829,8 @@ class _PalavrasEmbaralhadasDialogState
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding:
+                    const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: acertou
                       ? Colors.green
