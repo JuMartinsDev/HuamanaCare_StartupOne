@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../services/gemini_service.dart';
 
 import '../../models/app_state.dart';
 import '../../models/models.dart';
@@ -101,7 +102,7 @@ class _CuidadorInicioTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
           'HumanaCare',
@@ -124,8 +125,20 @@ class _CuidadorInicioTab extends StatelessWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
+body: SafeArea(
+  child: Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          Color(0xFFE7F4F2),
+          Color(0xFFF7FBFA),
+          Color(0xFFF9FBFA),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ),
+    ),
+    child: RefreshIndicator(
           onRefresh: () async {
             await context.read<AppState>().inicializar();
           },
@@ -242,6 +255,7 @@ _SosCard(
           ),
         ),
       ),
+),
     );
   }
 
@@ -252,7 +266,7 @@ _SosCard(
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.background,
+      backgroundColor:  const Color(0xFFE7F4F2),
       builder: (context) {
         return _DadosPacienteSheet(
           paciente: paciente,
@@ -747,7 +761,7 @@ class _CuidadorRemediosTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
           'Remédios',
@@ -1250,7 +1264,7 @@ class _CuidadorCompromissosTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
           'Agenda',
@@ -2299,18 +2313,20 @@ class _DataSelecionavel extends StatelessWidget {
 // ============================================================
 // CHAT
 // ============================================================
-
 class _CuidadorChatTab extends StatefulWidget {
   const _CuidadorChatTab();
 
   @override
-  State<_CuidadorChatTab> createState() => _CuidadorChatTabState();
+  State<_CuidadorChatTab> createState() =>
+      _CuidadorChatTabState();
 }
 
-class _CuidadorChatTabState extends State<_CuidadorChatTab> {
+class _CuidadorChatTabState
+    extends State<_CuidadorChatTab> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
 
+  String _canal = 'cuidador';
   bool _enviando = false;
 
   @override
@@ -2325,6 +2341,18 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
 
     return '${t.hour.toString().padLeft(2, '0')}:'
         '${t.minute.toString().padLeft(2, '0')}';
+  }
+
+  bool _mesmoDia(Mensagem a, Mensagem b) {
+    return a.criadaEm.year == b.criadaEm.year &&
+        a.criadaEm.month == b.criadaEm.month &&
+        a.criadaEm.day == b.criadaEm.day;
+  }
+
+  String _formatarData(DateTime data) {
+    return '${data.day.toString().padLeft(2, '0')}/'
+        '${data.month.toString().padLeft(2, '0')}/'
+        '${data.year}';
   }
 
   Future<void> _enviar() async {
@@ -2342,7 +2370,7 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
 
     try {
       await state.addMensagem(
-        'cuidador',
+        _canal,
         Mensagem(
           id: 'u${DateTime.now().millisecondsSinceEpoch}',
           texto: texto,
@@ -2352,8 +2380,65 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
       );
 
       _input.clear();
-
       _rolarParaFim();
+
+      // Resposta automática somente no canal do Milo.
+      if (_canal != 'milo') {
+        return;
+      }
+
+      try {
+        final paciente = state.paciente;
+        final remedios = state.remedios;
+        final compromissos = state.compromissos;
+
+        final resposta =
+            await GeminiService.enviarMensagem(
+          mensagemUsuario: texto,
+          historico: const [],
+          paciente: paciente,
+          remedios: remedios,
+          compromissos: compromissos,
+        );
+
+        if (!mounted) return;
+
+        await state.addMensagem(
+          'milo',
+          Mensagem(
+            id: 'a${DateTime.now().millisecondsSinceEpoch}',
+            texto: resposta,
+            recebido: true,
+            hora: _horaAgora(),
+            isMilo: true,
+            remetente: 'Milo',
+          ),
+        );
+
+        _rolarParaFim();
+      } catch (e) {
+        debugPrint(
+          'Erro ao obter resposta do Milo: $e',
+        );
+
+        if (!mounted) return;
+
+        await state.addMensagem(
+          'milo',
+          Mensagem(
+            id: 'a${DateTime.now().millisecondsSinceEpoch}',
+            texto:
+                'Não foi possível obter a resposta do Milo agora. '
+                'Tente novamente.',
+            recebido: true,
+            hora: _horaAgora(),
+            isMilo: true,
+            remetente: 'Milo',
+          ),
+        );
+
+        _rolarParaFim();
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -2385,16 +2470,171 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
     });
   }
 
+  Widget _canalChip(
+    String label,
+    String id,
+  ) {
+    final selecionado = _canal == id;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _canal = id;
+          });
+
+          _rolarParaFim();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            vertical: 9,
+          ),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selecionado
+                ? const Color(0xFFFDF6E3)
+                : AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selecionado
+                  ? const Color(0xFFEFE2B6)
+                  : AppTheme.divider,
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: selecionado
+                  ? AppTheme.accent
+                  : AppTheme.textLight,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _separadorData(DateTime data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 10,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          _formatarData(data),
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bubble(
+    Mensagem mensagem,
+  ) {
+    final minhaMensagem = !mensagem.recebido;
+
+    return Align(
+      alignment: minhaMensagem
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth:
+              MediaQuery.of(context).size.width * 0.72,
+        ),
+        margin: const EdgeInsets.only(
+          bottom: 10,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: minhaMensagem
+              ? AppTheme.primary
+              : const Color(0xFFE0F4F1),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(
+              minhaMensagem ? 16 : 4,
+            ),
+            bottomRight: Radius.circular(
+              minhaMensagem ? 4 : 16,
+            ),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            if (!minhaMensagem &&
+                mensagem.remetente != null)
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 2,
+                ),
+                child: Text(
+                  mensagem.remetente!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: mensagem.isMilo
+                        ? AppTheme.primary
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            Text(
+              mensagem.texto,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                height: 1.3,
+                color: minhaMensagem
+                    ? Colors.white
+                    : AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              mensagem.hora,
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: minhaMensagem
+                    ? Colors.white70
+                    : AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final paciente = state.paciente;
-    final mensagens = state.mensagens('cuidador');
+    final mensagens = state.mensagens(_canal);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
           'Chat',
@@ -2407,162 +2647,160 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
       body: SafeArea(
         child: Column(
           children: [
+            // --------------------------------------------------
+            // PACIENTE
+            // --------------------------------------------------
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(
-                24,
-                16,
-                24,
-                16,
+  width: double.infinity,
+  padding: const EdgeInsets.fromLTRB(
+    24,
+    16,
+    24,
+    16,
+  ),
+  decoration: BoxDecoration(
+    color: AppTheme.surface,
+    border: Border(
+      bottom: BorderSide(
+        color: Colors.grey.shade300,
+      ),
+    ),
+  ),
+  child: Row(
+    children: [
+      CircleAvatar(
+        radius: 24,
+        backgroundColor:
+            AppTheme.primary.withValues(
+          alpha: 0.10,
+        ),
+        child: Icon(
+          _canal == 'milo'
+              ? Icons.smart_toy_outlined
+              : _canal == 'familia'
+                  ? Icons.groups_outlined
+                  : Icons.person,
+          color: AppTheme.primary,
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              _canal == 'milo'
+                  ? 'Milo'
+                  : _canal == 'familia'
+                      ? 'Família'
+                      : paciente.nome.isEmpty
+                          ? 'Paciente'
+                          : paciente.nome,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight:
+                    FontWeight.w600,
+                color:
+                    AppTheme.textPrimary,
               ),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.shade300,
-                  ),
-                ),
+            ),
+            Text(
+              _canal == 'milo'
+                  ? 'Assistente virtual'
+                  : _canal == 'familia'
+                      ? paciente.nome.isEmpty
+                          ? 'Família do paciente'
+                          : 'Família de ${paciente.nome}'
+                      : 'Paciente',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color:
+                    AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
+
+            // --------------------------------------------------
+            // CANAIS
+            // --------------------------------------------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                4,
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor:
-                        AppTheme.primary.withValues(
-                      alpha: 0.10,
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: AppTheme.primary,
-                    ),
+                  _canalChip(
+                    'Paciente',
+                    'cuidador',
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          paciente.nome.isEmpty
-                              ? 'Paciente'
-                              : paciente.nome,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Paciente vinculado',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(width: 8),
+                  _canalChip(
+                    'Família',
+                    'familia',
+                  ),
+                  const SizedBox(width: 8),
+                  _canalChip(
+                    'Milo',
+                    'milo',
                   ),
                 ],
               ),
             ),
 
+            // --------------------------------------------------
+            // MENSAGENS
+            // --------------------------------------------------
             Expanded(
               child: mensagens.isEmpty
                   ? const _EmptyChat()
                   : ListView.builder(
                       controller: _scroll,
-                      padding: const EdgeInsets.all(20),
+                      padding:
+                          const EdgeInsets.fromLTRB(
+                        20,
+                        8,
+                        20,
+                        16,
+                      ),
                       itemCount: mensagens.length,
-                      itemBuilder: (context, index) {
-                        final mensagem = mensagens[index];
+                      itemBuilder:
+                          (context, index) {
+                        final mensagem =
+                            mensagens[index];
 
-                        final minhaMensagem =
-                            !mensagem.recebido;
+                        final mostrarData =
+                            index == 0 ||
+                                !_mesmoDia(
+                                  mensagens[
+                                      index - 1],
+                                  mensagem,
+                                );
 
-                        return Align(
-                          alignment: minhaMensagem
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            constraints:
-                                const BoxConstraints(
-                              maxWidth: 300,
-                            ),
-                            margin:
-                                const EdgeInsets.only(
-                              bottom: 10,
-                            ),
-                            padding:
-                                const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: minhaMensagem
-                                  ? AppTheme.primary
-                                  : AppTheme.surface,
-                              borderRadius:
-                                  BorderRadius.circular(16),
-                              border: !minhaMensagem
-                                  ? Border.all(
-                                      color:
-                                          Colors.grey.shade300,
-                                    )
-                                  : null,
-                            ),
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                if (!minhaMensagem &&
-                                    mensagem.remetente !=
-                                        null)
-                                  Padding(
-                                    padding:
-                                        const EdgeInsets.only(
-                                      bottom: 2,
-                                    ),
-                                    child: Text(
-                                      mensagem.remetente!,
-                                      style:
-                                          GoogleFonts.poppins(
-                                        fontSize: 11,
-                                        fontWeight:
-                                            FontWeight.w600,
-                                        color: AppTheme.primary,
-                                      ),
-                                    ),
-                                  ),
-
-                                Text(
-                                  mensagem.texto,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    color: minhaMensagem
-                                        ? Colors.white
-                                        : AppTheme.textPrimary,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  mensagem.hora,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    color: minhaMensagem
-                                        ? Colors.white70
-                                        : AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        return Column(
+                          children: [
+                            if (mostrarData)
+                              _separadorData(
+                                mensagem.criadaEm,
+                              ),
+                            _bubble(mensagem),
+                          ],
                         );
                       },
                     ),
             ),
 
+            // --------------------------------------------------
+            // CAMPO DE MENSAGEM
+            // --------------------------------------------------
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 16,
@@ -2580,13 +2818,16 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
                       onSubmitted: (_) => _enviar(),
                       enabled: !_enviando,
                       decoration: InputDecoration(
-                        hintText:
-                            'Digite uma mensagem...',
+                        hintText: _canal == 'milo'
+                            ? 'Pergunte ao Milo…'
+                            : 'Digite uma mensagem...',
                         filled: true,
                         fillColor: AppTheme.surface,
                         border: OutlineInputBorder(
                           borderRadius:
-                              BorderRadius.circular(24),
+                              BorderRadius.circular(
+                            24,
+                          ),
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -2595,10 +2836,9 @@ class _CuidadorChatTabState extends State<_CuidadorChatTab> {
                   const SizedBox(width: 8),
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor:
-                        _enviando
-                            ? AppTheme.textLight
-                            : AppTheme.primary,
+                    backgroundColor: _enviando
+                        ? AppTheme.textLight
+                        : AppTheme.primary,
                     child: IconButton(
                       onPressed:
                           _enviando ? null : _enviar,
@@ -2644,7 +2884,7 @@ class _CuidadorPerfilTab extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: const Color(0xFFE7F4F2),
         elevation: 0,
         title: Text(
           'Perfil',
@@ -3218,15 +3458,13 @@ class _HistoricoAcompanhamentoCard extends StatefulWidget {
 
 class _HistoricoAcompanhamentoCardState
     extends State<_HistoricoAcompanhamentoCard> {
-
-bool _mostrarHoje = true;
-bool _listaExpandida = false;
+  bool _mostrarHoje = true;
+  bool _listaExpandida = false;
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final historicos = state.historicoAtividades;
-
     final agora = DateTime.now();
 
     final inicioHoje = DateTime(
@@ -3239,75 +3477,9 @@ bool _listaExpandida = false;
       Duration(days: agora.weekday - 1),
     );
 
-    final atividadesSemana = historicos.where((item) {
-      final data = item.dataRealizada;
-
-      if (data == null) {
-        return false;
-      }
-
-      return !data.isBefore(inicioSemana);
-    }).toList();
-
-    final total = atividadesSemana.length;
-
-final concluidas = atividadesSemana.where((item) {
-  final realizado = item.dataRealizada;
-  final previsto = item.dataPrevista;
-
-  if (realizado == null || previsto == null) {
-    return item.resultado == 'concluido';
-  }
-
-  final realizadoMinuto = DateTime(
-    realizado.year,
-    realizado.month,
-    realizado.day,
-    realizado.hour,
-    realizado.minute,
-  );
-
-  final previstoMinuto = DateTime(
-    previsto.year,
-    previsto.month,
-    previsto.day,
-    previsto.hour,
-    previsto.minute,
-  );
-
-  return !realizadoMinuto.isAfter(previstoMinuto);
-}).length;
-
-final atrasadas = atividadesSemana.where((item) {
-  final realizado = item.dataRealizada;
-  final previsto = item.dataPrevista;
-
-  if (realizado == null || previsto == null) {
-    return item.resultado == 'atrasado';
-  }
-
-  final realizadoMinuto = DateTime(
-    realizado.year,
-    realizado.month,
-    realizado.day,
-    realizado.hour,
-    realizado.minute,
-  );
-
-  final previstoMinuto = DateTime(
-    previsto.year,
-    previsto.month,
-    previsto.day,
-    previsto.hour,
-    previsto.minute,
-  );
-
-  return realizadoMinuto.isAfter(previstoMinuto);
-}).length;
-
-    final adesao = total == 0
-        ? 0
-        : ((concluidas + atrasadas) / total * 100).round();
+    // ============================================================
+    // PERÍODOS
+    // ============================================================
 
     final atividadesHoje = historicos.where((item) {
       final data = item.dataRealizada;
@@ -3321,13 +3493,111 @@ final atrasadas = atividadesSemana.where((item) {
           data.day == agora.day;
     }).toList();
 
-    final atividadesExibidas =
+    final atividadesSemana = historicos.where((item) {
+      final data = item.dataRealizada;
+
+      if (data == null) {
+        return false;
+      }
+
+      return !data.isBefore(inicioSemana);
+    }).toList();
+
+    final atividadesSelecionadas =
         _mostrarHoje ? atividadesHoje : atividadesSemana;
+
+    // ============================================================
+    // RESUMO DO PERÍODO SELECIONADO
+    // ============================================================
+
+    final total = atividadesSelecionadas.length;
+
+    final concluidas = atividadesSelecionadas.where((item) {
+      final realizado = item.dataRealizada;
+      final previsto = item.dataPrevista;
+
+      if (realizado == null || previsto == null) {
+        return item.resultado == 'concluido';
+      }
+
+      final realizadoMinuto = DateTime(
+        realizado.year,
+        realizado.month,
+        realizado.day,
+        realizado.hour,
+        realizado.minute,
+      );
+
+      final previstoMinuto = DateTime(
+        previsto.year,
+        previsto.month,
+        previsto.day,
+        previsto.hour,
+        previsto.minute,
+      );
+
+      return !realizadoMinuto.isAfter(previstoMinuto);
+    }).length;
+
+    final atrasadas = atividadesSelecionadas.where((item) {
+      final realizado = item.dataRealizada;
+      final previsto = item.dataPrevista;
+
+      if (realizado == null || previsto == null) {
+        return item.resultado == 'atrasado';
+      }
+
+      final realizadoMinuto = DateTime(
+        realizado.year,
+        realizado.month,
+        realizado.day,
+        realizado.hour,
+        realizado.minute,
+      );
+
+      final previstoMinuto = DateTime(
+        previsto.year,
+        previsto.month,
+        previsto.day,
+        previsto.hour,
+        previsto.minute,
+      );
+
+      return realizadoMinuto.isAfter(previstoMinuto);
+    }).length;
+
+    // Adesão representa a proporção de atividades
+    // realizadas no horário.
+    final adesao = total == 0
+        ? 0
+        : ((concluidas / total) * 100).round();
+
+    // ============================================================
+    // LISTA
+    // ============================================================
+
+    final atividadesExibidas = [...atividadesSelecionadas];
 
     atividadesExibidas.sort(
       (a, b) => (b.dataRealizada ?? b.data)
           .compareTo(a.dataRealizada ?? a.data),
     );
+
+    // ============================================================
+    // TÍTULOS DO PERÍODO
+    // ============================================================
+
+    final tituloPeriodo =
+        _mostrarHoje ? 'Hoje' : 'Esta semana';
+
+    final subtituloPeriodo =
+        _mostrarHoje
+            ? 'Resumo das atividades de hoje'
+            : 'Resumo das atividades da semana';
+
+    // ============================================================
+    // CARD
+    // ============================================================
 
     return Container(
       width: double.infinity,
@@ -3345,6 +3615,7 @@ final atrasadas = atividadesSemana.where((item) {
           // ======================================================
           // CABEÇALHO
           // ======================================================
+
           Row(
             children: [
               Container(
@@ -3377,7 +3648,7 @@ final atrasadas = atividadesSemana.where((item) {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Resumo desta semana',
+                      subtituloPeriodo,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: AppTheme.textSecondary,
@@ -3394,6 +3665,7 @@ final atrasadas = atividadesSemana.where((item) {
           // ======================================================
           // RESUMO
           // ======================================================
+
           Row(
             children: [
               Expanded(
@@ -3429,11 +3701,12 @@ final atrasadas = atividadesSemana.where((item) {
           // ======================================================
           // ADESÃO
           // ======================================================
+
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Adesão',
+                  'Adesão $tituloPeriodo',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -3472,6 +3745,7 @@ final atrasadas = atividadesSemana.where((item) {
           // ======================================================
           // ABAS
           // ======================================================
+
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -3488,7 +3762,8 @@ final atrasadas = atividadesSemana.where((item) {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding:
+                          const EdgeInsets.symmetric(
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
@@ -3501,7 +3776,9 @@ final atrasadas = atividadesSemana.where((item) {
                             ? [
                                 BoxShadow(
                                   color: Colors.black
-                                      .withValues(alpha: 0.05),
+                                      .withValues(
+                                    alpha: 0.05,
+                                  ),
                                   blurRadius: 4,
                                   offset:
                                       const Offset(0, 1),
@@ -3532,7 +3809,8 @@ final atrasadas = atividadesSemana.where((item) {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding:
+                          const EdgeInsets.symmetric(
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
@@ -3545,7 +3823,9 @@ final atrasadas = atividadesSemana.where((item) {
                             ? [
                                 BoxShadow(
                                   color: Colors.black
-                                      .withValues(alpha: 0.05),
+                                      .withValues(
+                                    alpha: 0.05,
+                                  ),
                                   blurRadius: 4,
                                   offset:
                                       const Offset(0, 1),
@@ -3595,7 +3875,8 @@ final atrasadas = atividadesSemana.where((item) {
               IconButton(
                 onPressed: () {
                   setState(() {
-                    _listaExpandida = !_listaExpandida;
+                    _listaExpandida =
+                        !_listaExpandida;
                   });
                 },
                 icon: Icon(
@@ -3616,7 +3897,8 @@ final atrasadas = atividadesSemana.where((item) {
 
             if (atividadesExibidas.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(
+                padding:
+                    const EdgeInsets.symmetric(
                   vertical: 8,
                 ),
                 child: Text(
@@ -3636,7 +3918,6 @@ final atrasadas = atividadesSemana.where((item) {
                 ),
               ),
           ],
-
         ],
       ),
     );
