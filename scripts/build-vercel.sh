@@ -1,16 +1,26 @@
-
 #!/usr/bin/env bash
 set -e
 
-# Instala o Flutter no ambiente da Vercel
-git clone https://github.com/flutter/flutter.git \
-  --depth 1 --branch stable /tmp/flutter
+echo "Baixando Flutter..."
+git clone https://github.com/flutter/flutter.git -b stable --depth 1
 
-export PATH="/tmp/flutter/bin:$PATH"
+export PATH="$PATH:$(pwd)/flutter/bin"
 
-# Prepara o Flutter Web
-flutter config --enable-web
+echo "Versão do Flutter:"
+flutter --version
+
+echo "Instalando dependências..."
 flutter pub get
 
-# Compila o aplicativo para produção
-flutter build web --release
+if [ -z "$GEMINI_API_KEY" ]; then
+  echo "ERRO: GEMINI_API_KEY não foi encontrada no ambiente da Vercel."
+  exit 1
+else
+  echo "GEMINI_API_KEY encontrada."
+fi
+
+echo "Gerando aplicação web..."
+flutter build web --release \
+  --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
+
+echo "Build concluído."
