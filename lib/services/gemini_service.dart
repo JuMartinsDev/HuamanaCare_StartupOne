@@ -9,20 +9,28 @@ class GeminiService {
 
   static bool get apiAvailable => _apiAvailable;
 
-  // A chave NÃO fica escrita no código.
+  // Em produção, a chave do Gemini NÃO fica no Flutter.
+  // O app chama /api/gemini e a Vercel usa GEMINI_API_KEY no servidor.
   //
-  // Execute o projeto com:
-  // flutter run --dart-define=GEMINI_API_KEY=sua_chave_aqui
-  //
-  static const String _apiKey =
-      String.fromEnvironment('GEMINI_API_KEY');
+  // Para testar o Flutter local usando o backend já hospedado:
+  // flutter run -d chrome \
+  //   --dart-define=MILO_API_BASE_URL=https://humanacare.vercel.app
+  static const String _apiBaseUrl = String.fromEnvironment(
+    'MILO_API_BASE_URL',
+    defaultValue: '',
+  );
 
-  static const String _model = 'gemini-3.5-flash-lite';
+  static Uri get _apiUri {
+    if (_apiBaseUrl.trim().isNotEmpty) {
+      final base = _apiBaseUrl.endsWith('/')
+          ? _apiBaseUrl.substring(0, _apiBaseUrl.length - 1)
+          : _apiBaseUrl;
 
-  static const String _url =
-      'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent';
+      return Uri.parse('$base/api/gemini');
+    }
 
-  // ── Prompt de sistema com contexto real do paciente ────────────────
+    return Uri.base.resolve('/api/gemini');
+  }
 
   static String _systemPrompt({
     required Paciente paciente,
@@ -53,7 +61,6 @@ class GeminiService {
 Você é o Milo 🐘, assistente de saúde inteligente do aplicativo HumanaCare.
 
 Sua missão é ajudar pacientes idosos, seus familiares e cuidadores no gerenciamento do cuidado domiciliar.
-
 Você tem acesso ao contexto completo do paciente e deve responder de forma empática, clara e objetiva.
 
 ══ CONTEXTO DO PACIENTE ══
@@ -79,7 +86,6 @@ Condição de saúde: ${paciente.condicaoSaude}
 Alergias: ${paciente.alergias}
 
 Tipo sanguíneo: ${paciente.tipoSanguineo}
-
 Dispositivos: ${paciente.dispositivos}
 
 Observações: ${paciente.observacoes}
@@ -105,7 +111,6 @@ $compromissoTexto
 - Seja empático, paciente e use linguagem simples.
 
 - Use emojis com moderação para deixar a conversa mais amigável.
-
 - Nunca invente informações médicas ou prescreva medicamentos.
 
 - Se houver emergência, oriente a usar o botão SOS do app.
@@ -119,11 +124,8 @@ $compromissoTexto
 - Não invente medicamentos ou compromissos que não estejam no contexto.
 
 - Assine as mensagens sempre como "Milo 🐘".
-
 ''';
   }
-
-  // ── Envio da mensagem para o Gemini ────────────────────────────────
 
   static Future<String> enviarMensagem({
     required String mensagemUsuario,
@@ -132,18 +134,8 @@ $compromissoTexto
     required List<Remedio> remedios,
     required List<Compromisso> compromissos,
   }) async {
-    // Verifica se a chave foi recebida pelo --dart-define.
-    if (_apiKey.isEmpty) {
-      throw Exception(
-        'Chave de API do Gemini não configurada.\n\n'
-        'Execute o aplicativo usando '
-        '--dart-define=GEMINI_API_KEY=...',
-      );
-    }
-
     final contents = <Map<String, dynamic>>[];
 
-    // Adiciona o histórico da conversa.
     for (final msg in historico) {
       final role = msg['role'];
       final text = msg['text'];
@@ -155,35 +147,24 @@ $compromissoTexto
       contents.add({
         'role': role,
         'parts': [
-          {
-            'text': text,
-          },
+          {'text': text},
         ],
       });
     }
 
-    // Adiciona a nova mensagem do usuário.
     contents.add({
       'role': 'user',
       'parts': [
-        {
-          'text': mensagemUsuario,
-        },
+        {'text': mensagemUsuario},
       ],
     });
 
     final body = jsonEncode({
-      'system_instruction': {
-        'parts': [
-          {
-            'text': _systemPrompt(
-              paciente: paciente,
-              remedios: remedios,
-              compromissos: compromissos,
-            ),
-          },
-        ],
-      },
+      'systemPrompt': _systemPrompt(
+        paciente: paciente,
+        remedios: remedios,
+        compromissos: compromissos,
+      ),
       'contents': contents,
       'generationConfig': {
         'temperature': 0.7,
@@ -193,37 +174,25 @@ $compromissoTexto
     });
 
     try {
-      print('[GeminiService] Iniciando requisição...');
-      print('[GeminiService] Model: $_model');
+      print('[GeminiService] Chamando backend seguro: $_apiUri');
 
       final response = await http
           .post(
-            Uri.parse('$_url?key=$_apiKey'),
+            _apiUri,
             headers: {
               'Content-Type': 'application/json',
             },
             body: body,
           )
           .timeout(
-            const Duration(seconds: 15),
+            const Duration(seconds: 20),
           );
 
-      // Logs para depuração.
-      print(
-        '[GeminiService] Response status: ${response.statusCode}',
-      );
-      print(
-        '[GeminiService] Response body: ${response.body}',
-      );
+      print('[GeminiService] Backend status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         final texto = _extractTextFromResponse(data);
-
-        print(
-          '[GeminiService] Extracted text: ${texto ?? "<null>"}',
-        );
 
         if (texto != null && texto.trim().isNotEmpty) {
           _apiAvailable = true;
@@ -233,28 +202,27 @@ $compromissoTexto
         throw Exception('Resposta vazia do Gemini.');
       }
 
-      if (response.statusCode == 401 ||
-          response.statusCode == 403) {
+      if (response.statusCode == 401 || response.statusCode == 403) {
         _apiAvailable = false;
 
         throw Exception(
-          'Chave da API do Gemini inválida ou sem permissão. '
-          'Código: ${response.statusCode}',
+          'O serviço de IA recusou a autenticação. '
+          'Código: ${response.statusCode}. '
+          'Resposta: ${response.body}',
         );
       }
 
       if (response.statusCode == 400) {
         throw Exception(
-          'Requisição inválida para o Gemini. '
-          'Verifique o formato da mensagem e do modelo. '
+          'Requisição inválida para o assistente. '
           'Resposta: ${response.body}',
         );
       }
 
       if (response.statusCode == 404) {
         throw Exception(
-          'Modelo do Gemini não encontrado: $_model. '
-          'Código: ${response.statusCode}',
+          'Endpoint do assistente não encontrado. '
+          'Código: ${response.statusCode}.',
         );
       }
 
@@ -272,14 +240,14 @@ $compromissoTexto
       print('[GeminiService] Erro HTTP: $e');
 
       throw Exception(
-        'Não foi possível conectar ao Gemini. '
+        'Não foi possível conectar ao assistente. '
         'Verifique sua conexão com a internet.',
       );
     } on FormatException catch (e) {
       print('[GeminiService] Erro ao interpretar JSON: $e');
 
       throw Exception(
-        'O Gemini retornou uma resposta inesperada.',
+        'O assistente retornou uma resposta inesperada.',
       );
     } catch (e, st) {
       print('[GeminiService] Erro: $e');
@@ -288,8 +256,6 @@ $compromissoTexto
       rethrow;
     }
   }
-
-  // ── Extrai o texto da resposta do Gemini ───────────────────────────
 
   static String? _extractTextFromResponse(
     dynamic data,
@@ -302,9 +268,7 @@ $compromissoTexto
       final candidates = data['candidates'];
 
       if (candidates is! List || candidates.isEmpty) {
-        print(
-          '[GeminiService] Nenhum candidate encontrado.',
-        );
+        print('[GeminiService] Nenhum candidate encontrado.');
         return null;
       }
 
@@ -330,9 +294,7 @@ $compromissoTexto
 
       for (final part in parts) {
         if (part is Map && part['text'] != null) {
-          textos.add(
-            part['text'].toString(),
-          );
+          textos.add(part['text'].toString());
         }
       }
 
@@ -342,11 +304,8 @@ $compromissoTexto
 
       return textos.join('\n');
     } catch (e, st) {
-      print(
-        '[GeminiService] Erro ao extrair resposta: $e',
-      );
+      print('[GeminiService] Erro ao extrair resposta: $e');
       print(st);
-
       return null;
     }
   }

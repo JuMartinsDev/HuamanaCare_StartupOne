@@ -12,15 +12,7 @@ flutter --version
 echo "Instalando dependências..."
 flutter pub get
 
-if [ -z "$GEMINI_API_KEY" ]; then
-  echo "ERRO: GEMINI_API_KEY não foi encontrada no ambiente da Vercel."
-  exit 1
-else
-  echo "GEMINI_API_KEY encontrada."
-fi
-
 echo "Gerando aplicação web..."
-flutter build web --release \
-  --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
+flutter build web --release
 
 echo "Build concluído."
